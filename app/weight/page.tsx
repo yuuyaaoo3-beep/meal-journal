@@ -78,8 +78,8 @@ export default function Weight() {
   const maxW = weights.length > 0 ? Math.ceil(Math.max(...weights)) + 1 : 70
   const range = maxW - minW
 
-  const toY = (w) => Math.round(((maxW - w) / range) * 120)
-  const toX = (i) => weights.length > 1 ? Math.round((i / (weights.length - 1)) * 280) + 20 : 160
+  const toY = (w: number) => Math.round(((maxW - w) / range) * 120)
+  const toX = (i: number) => weights.length > 1 ? Math.round((i / (weights.length - 1)) * 280) + 20 : 160
 
   const pathD = weights.map((w, i) => `${i === 0 ? 'M' : 'L'} ${toX(i)} ${toY(w)}`).join(' ')
 
