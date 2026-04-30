@@ -1,5 +1,6 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { supabase } from '../../lib/supabase'
 
 export default function Goal() {
   const [age, setAge] = useState('')
@@ -9,6 +10,8 @@ export default function Goal() {
   const [activity, setActivity] = useState('1.375')
   const [goalWeight, setGoalWeight] = useState('')
   const [result, setResult] = useState(null)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
 
   const activityOptions = [
     { value: '1.2', label: 'ほぼ運動しない', sub: 'デスクワーク中心' },
@@ -16,6 +19,37 @@ export default function Goal() {
     { value: '1.55', label: '適度', sub: '週3〜5回の運動' },
     { value: '1.725', label: '活発', sub: '毎日運動・立ち仕事' },
   ]
+
+  useEffect(() => {
+    const loadGoal = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data } = await supabase
+        .from('user_goals')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single()
+      if (data) {
+        setAge(String(data.age))
+        setHeight(String(data.height))
+        setWeight(String(data.weight))
+        setGender(data.gender)
+        setActivity(String(data.activity))
+        setGoalWeight(String(data.goal_weight))
+        setResult({
+          bmr: data.bmr,
+          tdee: data.tdee,
+          targetCal: data.target_cal,
+          protein: data.protein,
+          fat: data.fat,
+          carbs: data.carbs,
+        })
+      }
+    }
+    loadGoal()
+  }, [])
 
   const calculate = () => {
     const a = parseFloat(age)
@@ -37,6 +71,40 @@ export default function Goal() {
     const fat = Math.round((targetCal * 0.25) / 9)
     const carbs = Math.round((targetCal * 0.50) / 4)
     setResult({ bmr: Math.round(bmr), tdee, targetCal, protein, fat, carbs })
+    setSaved(false)
+  }
+
+  const saveGoal = async () => {
+    if (!result) return
+    setSaving(true)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      alert('ログインが必要です')
+      setSaving(false)
+      return
+    }
+    await supabase.from('user_goals').delete().eq('user_id', user.id)
+    const { error } = await supabase.from('user_goals').insert({
+      user_id: user.id,
+      age: parseInt(age),
+      height: parseFloat(height),
+      weight: parseFloat(weight),
+      gender,
+      activity: parseFloat(activity),
+      goal_weight: parseFloat(goalWeight),
+      bmr: result.bmr,
+      tdee: result.tdee,
+      target_cal: result.targetCal,
+      protein: result.protein,
+      fat: result.fat,
+      carbs: result.carbs,
+    })
+    if (error) {
+      alert('保存に失敗しました')
+    } else {
+      setSaved(true)
+    }
+    setSaving(false)
   }
 
   return (
@@ -52,15 +120,10 @@ export default function Goal() {
             <label className="block text-sm text-[#5C574F] mb-2">性別</label>
             <div className="grid grid-cols-2 gap-2">
               {['female', 'male'].map((g) => (
-                <button
-                  key={g}
-                  onClick={() => setGender(g)}
+                <button key={g} onClick={() => setGender(g)}
                   className={`py-2.5 rounded-xl text-sm font-medium border transition-all ${
-                    gender === g
-                      ? 'bg-[#7A9471] text-white border-[#7A9471]'
-                      : 'bg-[#F8F4ED] text-[#5C574F] border-[#DDD6C8]'
-                  }`}
-                >
+                    gender === g ? 'bg-[#7A9471] text-white border-[#7A9471]' : 'bg-[#F8F4ED] text-[#5C574F] border-[#DDD6C8]'
+                  }`}>
                   {g === 'female' ? '女性' : '男性'}
                 </button>
               ))}
@@ -75,13 +138,9 @@ export default function Goal() {
               <div key={item.label}>
                 <label className="block text-xs text-[#5C574F] mb-1">{item.label}</label>
                 <div className="relative">
-                  <input
-                    type="number"
-                    value={item.val}
-                    onChange={(e) => item.set(e.target.value)}
+                  <input type="number" value={item.val} onChange={(e) => item.set(e.target.value)}
                     placeholder={item.placeholder}
-                    className="w-full px-3 py-2.5 rounded-xl border border-[#DDD6C8] bg-[#F8F4ED] text-[#2C2A26] text-sm focus:outline-none focus:border-[#7A9471]"
-                  />
+                    className="w-full px-3 py-2.5 rounded-xl border border-[#DDD6C8] bg-[#F8F4ED] text-[#2C2A26] text-sm focus:outline-none focus:border-[#7A9471]" />
                   <span className="absolute right-2 top-2.5 text-xs text-[#8A8377]">{item.unit}</span>
                 </div>
               </div>
@@ -91,15 +150,10 @@ export default function Goal() {
             <label className="block text-sm text-[#5C574F] mb-2">1日の運動量</label>
             <div className="flex flex-col gap-2">
               {activityOptions.map((opt) => (
-                <button
-                  key={opt.value}
-                  onClick={() => setActivity(opt.value)}
+                <button key={opt.value} onClick={() => setActivity(opt.value)}
                   className={`flex items-center justify-between px-4 py-3 rounded-xl border text-left transition-all ${
-                    activity === opt.value
-                      ? 'bg-[#E4ECDF] border-[#7A9471] text-[#7A9471]'
-                      : 'bg-[#F8F4ED] border-[#DDD6C8] text-[#5C574F]'
-                  }`}
-                >
+                    activity === opt.value ? 'bg-[#E4ECDF] border-[#7A9471] text-[#7A9471]' : 'bg-[#F8F4ED] border-[#DDD6C8] text-[#5C574F]'
+                  }`}>
                   <span className="text-sm font-medium">{opt.label}</span>
                   <span className="text-xs opacity-70">{opt.sub}</span>
                 </button>
@@ -109,28 +163,19 @@ export default function Goal() {
           <div>
             <label className="block text-sm text-[#5C574F] mb-1">1か月の減量目標</label>
             <div className="relative">
-              <input
-                type="number"
-                value={goalWeight}
-                onChange={(e) => setGoalWeight(e.target.value)}
-                placeholder="2"
-                step="0.5"
-                min="0"
-                max="4"
-                className="w-full px-4 py-3 rounded-xl border border-[#DDD6C8] bg-[#F8F4ED] text-[#2C2A26] focus:outline-none focus:border-[#7A9471]"
-              />
+              <input type="number" value={goalWeight} onChange={(e) => setGoalWeight(e.target.value)}
+                placeholder="2" step="0.5" min="0" max="4"
+                className="w-full px-4 py-3 rounded-xl border border-[#DDD6C8] bg-[#F8F4ED] text-[#2C2A26] focus:outline-none focus:border-[#7A9471]" />
               <span className="absolute right-4 top-3.5 text-sm text-[#8A8377]">kg / 月</span>
             </div>
           </div>
         </div>
-        <button
-          onClick={calculate}
-          className="w-full py-4 bg-[#7A9471] text-white rounded-2xl font-semibold text-base hover:bg-[#6A8462] transition-colors shadow-sm"
-        >
+        <button onClick={calculate}
+          className="w-full py-4 bg-[#7A9471] text-white rounded-2xl font-semibold text-base hover:bg-[#6A8462] transition-colors shadow-sm mb-3">
           私の数字を計算する →
         </button>
         {result && (
-          <div className="mt-4 bg-[#FCEEE5] rounded-2xl p-5 border border-[#F5B89D]">
+          <div className="bg-[#FCEEE5] rounded-2xl p-5 border border-[#F5B89D]">
             <p className="text-[#E8835A] font-medium text-sm mb-1">あなたの1日のプラン</p>
             <div className="text-3xl font-bold text-[#2C2A26] mb-1">
               {result.targetCal.toLocaleString()} <span className="text-base font-normal text-[#8A8377]">kcal</span>
@@ -138,7 +183,7 @@ export default function Goal() {
             <p className="text-xs text-[#8A8377] mb-4">
               基礎代謝 {result.bmr.toLocaleString()} kcal · 活動代謝 {result.tdee.toLocaleString()} kcal
             </p>
-            <div className="grid grid-cols-3 gap-3 pt-4 border-t border-[#F5B89D]">
+            <div className="grid grid-cols-3 gap-3 pt-4 border-t border-[#F5B89D] mb-4">
               {[
                 { label: 'タンパク質', val: result.protein, color: '#E8835A' },
                 { label: '脂質', val: result.fat, color: '#D4A340' },
@@ -152,6 +197,14 @@ export default function Goal() {
                 </div>
               ))}
             </div>
+            {saved ? (
+              <div className="text-center text-sm text-[#7A9471] font-medium py-2">✓ 保存しました！</div>
+            ) : (
+              <button onClick={saveGoal} disabled={saving}
+                className="w-full py-3 bg-[#E8835A] text-white rounded-xl font-medium hover:bg-[#D4724A] transition-colors disabled:opacity-50">
+                {saving ? '保存中...' : 'この目標を保存する'}
+              </button>
+            )}
           </div>
         )}
       </div>
