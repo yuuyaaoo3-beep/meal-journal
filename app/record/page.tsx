@@ -70,7 +70,7 @@ export default function Record() {
     }
   }
 
-  const selectFood = (food) => {
+  const selectFood = (food: any) => {
     setFoodName(food.name)
     setCalories(String(food.calories))
     setProtein(String(food.protein))
@@ -107,7 +107,7 @@ export default function Record() {
     setSaving(false)
   }
 
-  const deleteRecord = async (id) => {
+  const deleteRecord = async (id: string) => {
     await supabase.from('meal_records').delete().eq('id', id)
     loadRecords()
   }
