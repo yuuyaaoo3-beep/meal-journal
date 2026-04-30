@@ -5,11 +5,11 @@ import { supabase } from '../../lib/supabase'
 export default function Weight() {
   const [todayWeight, setTodayWeight] = useState('')
   const [memo, setMemo] = useState('')
-  const [records, setRecords] = useState([])
+  const [records, setRecords] = useState<any[]>([])
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
-  const [startWeight, setStartWeight] = useState(null)
-  const [goalWeight, setGoalWeight] = useState(null)
+  const [startWeight, setStartWeight] = useState<number | null>(null)
+  const [goalWeight, setGoalWeight] = useState<number | null>(null)
 
   useEffect(() => {
     loadRecords()
