@@ -27,7 +27,7 @@ export default function Record() {
   const [protein, setProtein] = useState('')
   const [fat, setFat] = useState('')
   const [carbs, setCarbs] = useState('')
-  const [records, setRecords] = useState([])
+  const [records, setRecords] = useState<any[]>([])
   const [saving, setSaving] = useState(false)
   const [todayTotal, setTodayTotal] = useState({ calories: 0, protein: 0, fat: 0, carbs: 0 })
   const [targetCal, setTargetCal] = useState(1750)
