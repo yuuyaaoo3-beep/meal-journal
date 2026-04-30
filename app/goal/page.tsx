@@ -2,6 +2,15 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 
+type Result = {
+  bmr: number
+  tdee: number
+  targetCal: number
+  protein: number
+  fat: number
+  carbs: number
+}
+
 export default function Goal() {
   const [age, setAge] = useState('')
   const [height, setHeight] = useState('')
@@ -9,7 +18,7 @@ export default function Goal() {
   const [gender, setGender] = useState('female')
   const [activity, setActivity] = useState('1.375')
   const [goalWeight, setGoalWeight] = useState('')
-  const [result, setResult] = useState(null)
+  const [result, setResult] = useState<Result | null>(null)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
@@ -78,11 +87,7 @@ export default function Goal() {
     if (!result) return
     setSaving(true)
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      alert('ログインが必要です')
-      setSaving(false)
-      return
-    }
+    if (!user) { alert('ログインが必要です'); setSaving(false); return }
     await supabase.from('user_goals').delete().eq('user_id', user.id)
     const { error } = await supabase.from('user_goals').insert({
       user_id: user.id,
@@ -99,11 +104,7 @@ export default function Goal() {
       fat: result.fat,
       carbs: result.carbs,
     })
-    if (error) {
-      alert('保存に失敗しました')
-    } else {
-      setSaved(true)
-    }
+    if (error) { alert('保存に失敗しました') } else { setSaved(true) }
     setSaving(false)
   }
 
