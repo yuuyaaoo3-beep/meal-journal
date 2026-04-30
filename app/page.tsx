@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 import Link from 'next/link'
 
 export default function Home() {
-  const [goal, setGoal] = useState(null)
+  const [goal, setGoal] = useState<any>(null)
   const [todayRecords, setTodayRecords] = useState<any[]>([])
   const [todayWeight, setTodayWeight] = useState(null)
   const [loading, setLoading] = useState(true)
