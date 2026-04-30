@@ -117,15 +117,11 @@ export default function Record() {
   return (
     <div className="min-h-screen bg-[#F8F4ED] pb-24">
       <div className="max-w-md mx-auto px-4 pt-8">
-
-        {/* ヘッダー */}
         <div className="mb-6">
           <p className="text-xs font-semibold tracking-widest text-[#7A9471] uppercase mb-1">Record</p>
           <h1 className="text-2xl font-bold text-[#2C2A26]">食事を記録する</h1>
           <p className="text-sm text-[#8A8377] mt-1">今日食べたものを残しましょう</p>
         </div>
-
-        {/* カロリー進捗 */}
         <div className="bg-white rounded-2xl p-5 border border-[#DDD6C8] mb-4">
           <div className="flex justify-between items-end mb-2">
             <div>
@@ -135,10 +131,8 @@ export default function Record() {
             <span className="text-sm font-medium text-[#7A9471]">{progress}%</span>
           </div>
           <div className="w-full h-2 bg-[#EFE8DA] rounded-full overflow-hidden mb-4">
-            <div
-              className="h-full bg-[#E8835A] rounded-full transition-all duration-500"
-              style={{ width: `${progress}%` }}
-            />
+            <div className="h-full bg-[#E8835A] rounded-full transition-all duration-500"
+              style={{ width: `${progress}%` }} />
           </div>
           <div className="grid grid-cols-3 gap-3">
             {[
@@ -155,8 +149,6 @@ export default function Record() {
             ))}
           </div>
         </div>
-
-        {/* タブ */}
         <div className="flex gap-2 mb-4 overflow-x-auto">
           {MEAL_TYPES.map((m) => (
             <button key={m.key} onClick={() => setActiveTab(m.key)}
@@ -169,8 +161,6 @@ export default function Record() {
             </button>
           ))}
         </div>
-
-        {/* 記録済みリスト */}
         {records.filter(r => r.meal_type === activeTab).length > 0 && (
           <div className="mb-4">
             {records.filter(r => r.meal_type === activeTab).map((r) => (
@@ -189,8 +179,6 @@ export default function Record() {
             ))}
           </div>
         )}
-
-        {/* 入力フォーム */}
         <div className="bg-white rounded-2xl p-5 border border-[#DDD6C8] mb-4">
           <div className="mb-3">
             <label className="block text-sm text-[#5C574F] mb-1">食べたもの</label>
@@ -199,38 +187,25 @@ export default function Record() {
               className="w-full px-4 py-3 rounded-xl border border-[#DDD6C8] bg-[#F8F4ED] text-[#2C2A26] focus:outline-none focus:border-[#7A9471]" />
           </div>
           <div className="grid grid-cols-2 gap-3 mb-3">
-            <div>
-              <label className="block text-xs text-[#5C574F] mb-1">カロリー (kcal)</label>
-              <input type="number" value={calories} onChange={(e) => setCalories(e.target.value)}
-                placeholder="300"
-                className="w-full px-3 py-2.5 rounded-xl border border-[#DDD6C8] bg-[#F8F4ED] text-[#2C2A26] text-sm focus:outline-none focus:border-[#7A9471]" />
-            </div>
-            <div>
-              <label className="block text-xs text-[#5C574F] mb-1">タンパク質 (g)</label>
-              <input type="number" value={protein} onChange={(e) => setProtein(e.target.value)}
-                placeholder="20"
-                className="w-full px-3 py-2.5 rounded-xl border border-[#DDD6C8] bg-[#F8F4ED] text-[#2C2A26] text-sm focus:outline-none focus:border-[#7A9471]" />
-            </div>
-            <div>
-              <label className="block text-xs text-[#5C574F] mb-1">脂質 (g)</label>
-              <input type="number" value={fat} onChange={(e) => setFat(e.target.value)}
-                placeholder="10"
-                className="w-full px-3 py-2.5 rounded-xl border border-[#DDD6C8] bg-[#F8F4ED] text-[#2C2A26] text-sm focus:outline-none focus:border-[#7A9471]" />
-            </div>
-            <div>
-              <label className="block text-xs text-[#5C574F] mb-1">炭水化物 (g)</label>
-              <input type="number" value={carbs} onChange={(e) => setCarbs(e.target.value)}
-                placeholder="40"
-                className="w-full px-3 py-2.5 rounded-xl border border-[#DDD6C8] bg-[#F8F4ED] text-[#2C2A26] text-sm focus:outline-none focus:border-[#7A9471]" />
-            </div>
+            {[
+              { label: 'カロリー (kcal)', val: calories, set: setCalories, placeholder: '300' },
+              { label: 'タンパク質 (g)', val: protein, set: setProtein, placeholder: '20' },
+              { label: '脂質 (g)', val: fat, set: setFat, placeholder: '10' },
+              { label: '炭水化物 (g)', val: carbs, set: setCarbs, placeholder: '40' },
+            ].map((item) => (
+              <div key={item.label}>
+                <label className="block text-xs text-[#5C574F] mb-1">{item.label}</label>
+                <input type="number" value={item.val} onChange={(e) => item.set(e.target.value)}
+                  placeholder={item.placeholder}
+                  className="w-full px-3 py-2.5 rounded-xl border border-[#DDD6C8] bg-[#F8F4ED] text-[#2C2A26] text-sm focus:outline-none focus:border-[#7A9471]" />
+              </div>
+            ))}
           </div>
           <button onClick={saveRecord} disabled={saving}
             className="w-full py-3 bg-[#7A9471] text-white rounded-xl font-medium hover:bg-[#6A8462] transition-colors disabled:opacity-50">
             {saving ? '保存中...' : '記録する'}
           </button>
         </div>
-
-        {/* よく食べるもの */}
         <div>
           <p className="text-sm font-medium text-[#5C574F] mb-2">よく食べるもの</p>
           <div className="grid grid-cols-2 gap-2">
@@ -243,7 +218,6 @@ export default function Record() {
             ))}
           </div>
         </div>
-
       </div>
     </div>
   )
