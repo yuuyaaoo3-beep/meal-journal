@@ -6,7 +6,7 @@ const NAV_ITEMS = [
   {
     href: '/',
     label: 'ホーム',
-    icon: (active) => (
+    icon: (active: boolean) => (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
         stroke={active ? '#7A9471' : '#8A8377'} strokeWidth="1.8"
         strokeLinecap="round" strokeLinejoin="round">
@@ -18,7 +18,7 @@ const NAV_ITEMS = [
   {
     href: '/record',
     label: '記録',
-    icon: (active) => (
+    icon: (active: boolean) => (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
         stroke={active ? '#7A9471' : '#8A8377'} strokeWidth="1.8"
         strokeLinecap="round" strokeLinejoin="round">
@@ -32,7 +32,7 @@ const NAV_ITEMS = [
   {
     href: '/weight',
     label: '体重',
-    icon: (active) => (
+    icon: (active: boolean) => (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
         stroke={active ? '#7A9471' : '#8A8377'} strokeWidth="1.8"
         strokeLinecap="round" strokeLinejoin="round">
@@ -43,7 +43,7 @@ const NAV_ITEMS = [
   {
     href: '/goal',
     label: '目標',
-    icon: (active) => (
+    icon: (active: boolean) => (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
         stroke={active ? '#7A9471' : '#8A8377'} strokeWidth="1.8"
         strokeLinecap="round" strokeLinejoin="round">
