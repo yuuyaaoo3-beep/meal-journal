@@ -18,8 +18,8 @@ export default function Learn() {
   const isLast = current === pages.length - 1
 
   return (
-    <div className="min-h-screen bg-[#F8F4ED] flex flex-col">
-      <div className="max-w-md mx-auto w-full flex flex-col flex-1 pt-6 pb-6 px-4">
+    <div className="min-h-screen bg-[#F8F4ED] flex flex-col pb-32">
+      <div className="max-w-md mx-auto w-full flex flex-col flex-1 pt-6 px-4">
 
         {/* ページインジケーター */}
         <div className="flex justify-center gap-2 mb-4">
@@ -32,26 +32,25 @@ export default function Learn() {
         </div>
 
         {/* 画像 */}
-        <div className="flex-1 flex items-center justify-center">
-          <div className="w-full rounded-2xl overflow-hidden shadow-sm border border-[#DDD6C8]">
-            <Image
-              src={pages[current].src}
-              alt={pages[current].alt}
-              width={800}
-              height={500}
-              className="w-full h-auto"
-              priority
-            />
-          </div>
+        <div className="w-full rounded-2xl overflow-hidden shadow-sm border border-[#DDD6C8]">
+          <Image
+            src={pages[current].src}
+            alt={pages[current].alt}
+            width={800}
+            height={1000}
+            className="w-full h-auto"
+            style={{ aspectRatio: '4/5' }}
+            priority
+          />
         </div>
 
         {/* ページ番号 */}
-        <div className="text-center text-xs text-[#8A8377] mt-3 mb-3">
+        <div className="text-center text-xs text-[#8A8377] mt-3 mb-4">
           {current + 1} / {pages.length}
         </div>
 
         {/* ナビゲーションボタン */}
-        <div className="flex gap-3">
+        <div className="flex gap-3 mb-3">
           {current > 0 ? (
             <button onClick={() => setCurrent(current - 1)}
               className="flex-1 py-3 bg-white border border-[#DDD6C8] rounded-2xl text-sm font-medium text-[#5C574F] hover:border-[#7A9471] transition-all">
@@ -76,7 +75,7 @@ export default function Learn() {
         {/* スキップ */}
         {!isLast && (
           <button onClick={() => router.push('/')}
-            className="text-center text-xs text-[#8A8377] mt-3 hover:text-[#5C574F] transition-colors">
+            className="text-center text-xs text-[#8A8377] mb-4 hover:text-[#5C574F] transition-colors">
             スキップして始める
           </button>
         )}
