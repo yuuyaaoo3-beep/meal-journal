@@ -39,7 +39,7 @@ export default function Learn() {
             width={800}
             height={1000}
             className="w-full h-auto"
-            style={{ aspectRatio: '4/5' }}
+            style={{ aspectRatio: '1122/1402' }}
             priority
           />
         </div>
