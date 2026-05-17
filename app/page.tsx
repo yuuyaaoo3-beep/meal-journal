@@ -177,6 +177,26 @@ export default function Home() {
           </div>
         </div>
 
+        <div className="mt-4 bg-gradient-to-br from-[#FCEEE5] to-[#F8F4ED] rounded-2xl p-5 border border-[#F5B89D]">
+          <p className="text-sm font-semibold text-[#2C2A26] mb-1">🌟 プレミアムにアップグレード</p>
+          <p className="text-xs text-[#5C574F] mb-4">AI献立提案・食事レポートが使い放題になります</p>
+          <button
+            onClick={async () => {
+              const { data: { user } } = await supabase.auth.getUser()
+              if (!user) return
+              const res = await fetch('/api/create-checkout-session', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: user.id, email: user.email }),
+              })
+              const { url } = await res.json()
+              if (url) window.location.href = url
+            }}
+            className="w-full py-3 bg-[#E8835A] text-white rounded-xl font-medium hover:bg-[#D4724A] transition-colors">
+            ¥980 / 月 · 今すぐ始める
+          </button>
+        </div>
+
       </div>
     </div>
   )
