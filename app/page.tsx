@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import Link from 'next/link'
+import HamburgerMenu from './components/HamburgerMenu'
 
 export default function Home() {
   const [goal, setGoal] = useState<any>(null)
@@ -66,11 +67,14 @@ export default function Home() {
     <div className="min-h-screen bg-[#F8F4ED] pb-24">
       <div className="max-w-md mx-auto px-4 pt-8">
 
-        <div className="mb-5">
-          <p className="text-[#E8835A] font-medium text-sm mb-1">{dateStr}</p>
-          <h1 className="text-2xl font-bold text-[#2C2A26]">こんにちは 👋</h1>
-          <p className="text-sm text-[#8A8377]">今日も小さな一歩を、楽しく。</p>
-        </div>
+        <div className="mb-5 flex items-start justify-between">
+  <div>
+    <p className="text-[#E8835A] font-medium text-sm mb-1">{dateStr}</p>
+    <h1 className="text-2xl font-bold text-[#2C2A26]">こんにちは 👋</h1>
+    <p className="text-sm text-[#8A8377]">今日も小さな一歩を、楽しく。</p>
+  </div>
+  <HamburgerMenu isPremium={isPremium} />
+</div>
 
         <div className="bg-gradient-to-br from-[#E4ECDF] to-[#F8F4ED] rounded-2xl p-5 mb-4 border border-[#DDD6C8]">
           <div className="flex items-center gap-5">
