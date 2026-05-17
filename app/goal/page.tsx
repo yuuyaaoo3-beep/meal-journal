@@ -114,7 +114,13 @@ export default function Goal() {
         <div className="mb-6">
           <p className="text-xs font-semibold tracking-widest text-[#7A9471] uppercase mb-1">Step 01</p>
           <h1 className="text-2xl font-bold text-[#2C2A26]">目標を設定する</h1>
-          <p className="text-sm text-[#8A8377] mt-1">あなたの情報を入力してください</p>
+          <a href="/learn" className="inline-flex items-center gap-1 text-xs text-[#7A9471] font-medium mt-2 hover:underline">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+  </svg>
+  なぜ痩せられるのか？解説を読む
+</a>
         </div>
         <div className="bg-white rounded-2xl p-5 border border-[#DDD6C8] mb-4">
           <div className="mb-4">
