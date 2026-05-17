@@ -7,6 +7,7 @@ export default function Home() {
   const [goal, setGoal] = useState<any>(null)
   const [todayRecords, setTodayRecords] = useState<any[]>([])
   const [todayWeight, setTodayWeight] = useState(null)
+  const [loading, setLoading] = useState(true)
   const [isPremium, setIsPremium] = useState(false)
 
   useEffect(() => {
@@ -20,9 +21,9 @@ export default function Home() {
         supabase.from('weight_records').select('*').eq('user_id', user.id).eq('recorded_at', today).single(),
       ])
       if (goalRes.data) {
-  setGoal(goalRes.data)
-  setIsPremium(goalRes.data.is_premium || false)
-}
+        setGoal(goalRes.data)
+        setIsPremium(goalRes.data.is_premium || false)
+      }
       if (recordsRes.data) setTodayRecords(recordsRes.data)
       if (weightRes.data) setTodayWeight(weightRes.data.weight)
       setLoading(false)
@@ -163,7 +164,7 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-4 border border-[#DDD6C8]">
+        <div className="bg-white rounded-2xl p-4 border border-[#DDD6C8] mb-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-[#8A8377] mb-1">今日の体重</p>
@@ -181,29 +182,35 @@ export default function Home() {
         </div>
 
         {!isPremium && (
-  <div className="mt-4 bg-gradient-to-br from-[#FCEEE5] to-[#F8F4ED] rounded-2xl p-5 border border-[#F5B89D]">
-    <p className="text-sm font-semibold text-[#2C2A26] mb-1">🌟 プレミアムにアップグレード</p>
-    <p className="text-xs text-[#5C574F] mb-4">AI献立提案・食事レポートが使い放題になります</p>
-    <button
-      onClick={async () => {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
-        const res = await fetch('/api/create-checkout-session', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId: user.id, email: user.email }),
-        })
-        const { url } = await res.json()
-        if (url) window.location.href = url
-      }}
-      className="w-full py-3 bg-[#E8835A] text-white rounded-xl font-medium hover:bg-[#D4724A] transition-colors">
-      ¥980 / 月 · 今すぐ始める
-    </button>
-  </div>
-)}
-{isPremium && (
-  <div className="mt-4 bg-gradient-to-br from-[#E4ECDF] to-[#F8F4ED] rounded-2xl p-5 border border-[#DDD6C8]">
-    <p className="text-sm font-semibold text-[#7A9471] mb-1">🌟 プレミアムプラン利用中</p>
-    <p className="text-xs text-[#5C574F]">AI機能がすべて使い放題です</p>
-  </div>
-)}
+          <div className="mt-4 bg-gradient-to-br from-[#FCEEE5] to-[#F8F4ED] rounded-2xl p-5 border border-[#F5B89D]">
+            <p className="text-sm font-semibold text-[#2C2A26] mb-1">🌟 プレミアムにアップグレード</p>
+            <p className="text-xs text-[#5C574F] mb-4">AI献立提案・食事レポートが使い放題になります</p>
+            <button
+              onClick={async () => {
+                const { data: { user } } = await supabase.auth.getUser()
+                if (!user) return
+                const res = await fetch('/api/create-checkout-session', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ userId: user.id, email: user.email }),
+                })
+                const { url } = await res.json()
+                if (url) window.location.href = url
+              }}
+              className="w-full py-3 bg-[#E8835A] text-white rounded-xl font-medium hover:bg-[#D4724A] transition-colors">
+              ¥980 / 月 · 今すぐ始める
+            </button>
+          </div>
+        )}
+
+        {isPremium && (
+          <div className="mt-4 bg-gradient-to-br from-[#E4ECDF] to-[#F8F4ED] rounded-2xl p-5 border border-[#DDD6C8]">
+            <p className="text-sm font-semibold text-[#7A9471] mb-1">🌟 プレミアムプラン利用中</p>
+            <p className="text-xs text-[#5C574F]">AI機能がすべて使い放題です</p>
+          </div>
+        )}
+
+      </div>
+    </div>
+  )
+}
