@@ -19,7 +19,21 @@ export default function Login() {
     } else {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) setMessage('メールアドレスまたはパスワードが違います')
-      else window.location.href = '/'
+      else {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (user) {
+    const { data } = await supabase
+      .from('user_goals')
+      .select('id')
+      .eq('user_id', user.id)
+      .single()
+    if (data) {
+      window.location.href = '/'
+    } else {
+      window.location.href = '/learn'
+    }
+  }
+}
     }
     setLoading(false)
   }
