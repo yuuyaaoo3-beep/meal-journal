@@ -32,10 +32,11 @@ export default function HamburgerMenu({ isPremium }: Props) {
         <span className="w-5 h-0.5 bg-[#5C574F] rounded-full"></span>
       </button>
 
-      {/* オーバーレイ */}
+      {/* オーバーレイ（半透明・薄め） */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-40 z-40"
+          className="fixed inset-0 z-40"
+          style={{ background: 'rgba(44,42,38,0.3)' }}
           onClick={() => setIsOpen(false)}
         />
       )}
@@ -101,8 +102,8 @@ export default function HamburgerMenu({ isPremium }: Props) {
           )}
         </div>
 
-        {/* ログアウト */}
-        <div className="absolute bottom-12 left-0 right-0 px-4">
+        {/* ログアウト - ナビバーの上に固定 */}
+        <div className="absolute bottom-24 left-0 right-0 px-4">
           <button onClick={handleLogout}
             className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#F8F4ED] transition-colors text-left w-full">
             <span className="text-xl">🚪</span>
