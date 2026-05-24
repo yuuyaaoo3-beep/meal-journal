@@ -31,11 +31,17 @@ export default function Record() {
   const [saving, setSaving] = useState(false)
   const [todayTotal, setTodayTotal] = useState({ calories: 0, protein: 0, fat: 0, carbs: 0 })
   const [targetCal, setTargetCal] = useState(1750)
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
+  const [myMeals, setMyMeals] = useState<any[]>([])
+  const [showMyMeals, setShowMyMeals] = useState(false)
+  const [myMealSearch, setMyMealSearch] = useState('')
+  const [editingMeal, setEditingMeal] = useState<any>(null)
 
   useEffect(() => {
     loadRecords()
     loadTarget()
-  }, [])
+    loadMyMeals()
+  }, [selectedDate])
 
   const loadTarget = async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -48,15 +54,25 @@ export default function Record() {
     if (data) setTargetCal(data.target_cal)
   }
 
+  const loadMyMeals = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const { data } = await supabase
+      .from('my_meals')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+    if (data) setMyMeals(data)
+  }
+
   const loadRecords = async () => {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
-    const today = new Date().toISOString().split('T')[0]
     const { data } = await supabase
       .from('meal_records')
       .select('*')
       .eq('user_id', user.id)
-      .eq('recorded_at', today)
+      .eq('recorded_at', selectedDate)
       .order('created_at', { ascending: true })
     if (data) {
       setRecords(data)
@@ -71,11 +87,12 @@ export default function Record() {
   }
 
   const selectFood = (food: any) => {
-    setFoodName(food.name)
+    setFoodName(food.food_name || food.name)
     setCalories(String(food.calories))
     setProtein(String(food.protein))
     setFat(String(food.fat))
     setCarbs(String(food.carbs))
+    setShowMyMeals(false)
   }
 
   const saveRecord = async () => {
@@ -83,7 +100,6 @@ export default function Record() {
     setSaving(true)
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { alert('ログインが必要です'); setSaving(false); return }
-    const today = new Date().toISOString().split('T')[0]
     const { error } = await supabase.from('meal_records').insert({
       user_id: user.id,
       meal_type: activeTab,
@@ -92,7 +108,7 @@ export default function Record() {
       protein: parseFloat(protein) || 0,
       fat: parseFloat(fat) || 0,
       carbs: parseFloat(carbs) || 0,
-      recorded_at: today,
+      recorded_at: selectedDate,
     })
     if (error) {
       alert('保存に失敗しました')
@@ -107,9 +123,52 @@ export default function Record() {
     setSaving(false)
   }
 
+  const saveToMyMeals = async () => {
+    if (!foodName) { alert('食べたものを入力してください'); return }
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const { error } = await supabase.from('my_meals').insert({
+      user_id: user.id,
+      food_name: foodName,
+      calories: parseInt(calories) || 0,
+      protein: parseFloat(protein) || 0,
+      fat: parseFloat(fat) || 0,
+      carbs: parseFloat(carbs) || 0,
+    })
+    if (error) {
+      alert('保存に失敗しました')
+    } else {
+      alert('マイミールに保存しました！')
+      loadMyMeals()
+    }
+  }
+
   const deleteRecord = async (id: string) => {
     await supabase.from('meal_records').delete().eq('id', id)
     loadRecords()
+  }
+
+  const deleteMyMeal = async (id: string) => {
+    if (!confirm('このマイミールを削除しますか？')) return
+    await supabase.from('my_meals').delete().eq('id', id)
+    loadMyMeals()
+  }
+
+  const startEditMyMeal = (meal: any) => {
+    setEditingMeal(meal)
+  }
+
+  const updateMyMeal = async () => {
+    if (!editingMeal) return
+    await supabase.from('my_meals').update({
+      food_name: editingMeal.food_name,
+      calories: parseInt(editingMeal.calories) || 0,
+      protein: parseFloat(editingMeal.protein) || 0,
+      fat: parseFloat(editingMeal.fat) || 0,
+      carbs: parseFloat(editingMeal.carbs) || 0,
+    }).eq('id', editingMeal.id)
+    setEditingMeal(null)
+    loadMyMeals()
   }
 
   const progress = Math.min(100, Math.round((todayTotal.calories / targetCal) * 100))
@@ -122,6 +181,15 @@ export default function Record() {
           <h1 className="text-2xl font-bold text-[#2C2A26]">食事を記録する</h1>
           <p className="text-sm text-[#8A8377] mt-1">今日食べたものを残しましょう</p>
         </div>
+
+        {/* 日付選択 */}
+        <div className="bg-white rounded-2xl p-4 border border-[#DDD6C8] mb-4">
+          <label className="block text-xs text-[#5C574F] mb-1">記録する日付</label>
+          <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)}
+            max={new Date().toISOString().split('T')[0]}
+            className="w-full px-4 py-2.5 rounded-xl border border-[#DDD6C8] bg-[#F8F4ED] text-[#2C2A26] focus:outline-none focus:border-[#7A9471]" />
+        </div>
+
         <div className="bg-white rounded-2xl p-5 border border-[#DDD6C8] mb-4">
           <div className="flex justify-between items-end mb-2">
             <div>
@@ -149,6 +217,7 @@ export default function Record() {
             ))}
           </div>
         </div>
+
         <div className="flex gap-2 mb-4 overflow-x-auto">
           {MEAL_TYPES.map((m) => (
             <button key={m.key} onClick={() => setActiveTab(m.key)}
@@ -161,6 +230,7 @@ export default function Record() {
             </button>
           ))}
         </div>
+
         {records.filter(r => r.meal_type === activeTab).length > 0 && (
           <div className="mb-4">
             {records.filter(r => r.meal_type === activeTab).map((r) => (
@@ -179,6 +249,7 @@ export default function Record() {
             ))}
           </div>
         )}
+
         <div className="bg-white rounded-2xl p-5 border border-[#DDD6C8] mb-4">
           <div className="mb-3">
             <label className="block text-sm text-[#5C574F] mb-1">食べたもの</label>
@@ -201,11 +272,100 @@ export default function Record() {
               </div>
             ))}
           </div>
-          <button onClick={saveRecord} disabled={saving}
-            className="w-full py-3 bg-[#7A9471] text-white rounded-xl font-medium hover:bg-[#6A8462] transition-colors disabled:opacity-50">
-            {saving ? '保存中...' : '記録する'}
-          </button>
+          <div className="flex gap-2">
+            <button onClick={saveRecord} disabled={saving}
+              className="flex-1 py-3 bg-[#7A9471] text-white rounded-xl font-medium hover:bg-[#6A8462] transition-colors disabled:opacity-50">
+              {saving ? '保存中...' : '記録する'}
+            </button>
+            <button onClick={saveToMyMeals}
+              className="px-4 py-3 bg-[#FCEEE5] text-[#E8835A] rounded-xl font-medium hover:bg-[#F5D5C5] transition-colors text-sm whitespace-nowrap">
+              ⭐ マイミール保存
+            </button>
+          </div>
         </div>
+
+        {/* マイミール */}
+        <div className="bg-white rounded-2xl p-5 border border-[#DDD6C8] mb-4">
+          <button onClick={() => setShowMyMeals(!showMyMeals)}
+            className="w-full flex items-center justify-between mb-3">
+            <p className="text-sm font-medium text-[#5C574F]">⭐ マイミール ({myMeals.length})</p>
+            <span className="text-xs text-[#8A8377]">{showMyMeals ? '▼' : '▶'}</span>
+          </button>
+          {showMyMeals && (
+  <>
+    <input
+      type="text"
+      value={myMealSearch}
+      onChange={(e) => setMyMealSearch(e.target.value)}
+      placeholder="マイミールを検索..."
+      className="w-full px-3 py-2.5 rounded-xl border border-[#DDD6C8] bg-[#F8F4ED] text-sm focus:outline-none focus:border-[#7A9471] mb-3"
+    />
+    {myMeals.filter(m => m.food_name.includes(myMealSearch)).length === 0 ? (
+      <p className="text-xs text-[#8A8377] text-center py-4">見つかりませんでした</p>
+    ) : (
+      <div className="flex flex-col gap-2">
+        {myMeals.filter(m => m.food_name.includes(myMealSearch)).map((meal) => (
+                  <div key={meal.id} className="bg-[#F8F4ED] rounded-xl p-3 border border-[#DDD6C8]">
+                    {editingMeal?.id === meal.id ? (
+                      <div className="flex flex-col gap-2">
+                        <input type="text" value={editingMeal.food_name}
+                          onChange={(e) => setEditingMeal({...editingMeal, food_name: e.target.value})}
+                          className="px-3 py-2 rounded-lg border border-[#DDD6C8] bg-white text-sm" />
+                        <div className="grid grid-cols-4 gap-1">
+                          <input type="number" value={editingMeal.calories}
+                            onChange={(e) => setEditingMeal({...editingMeal, calories: e.target.value})}
+                            placeholder="kcal"
+                            className="px-2 py-1.5 rounded-lg border border-[#DDD6C8] bg-white text-xs" />
+                          <input type="number" value={editingMeal.protein}
+                            onChange={(e) => setEditingMeal({...editingMeal, protein: e.target.value})}
+                            placeholder="P"
+                            className="px-2 py-1.5 rounded-lg border border-[#DDD6C8] bg-white text-xs" />
+                          <input type="number" value={editingMeal.fat}
+                            onChange={(e) => setEditingMeal({...editingMeal, fat: e.target.value})}
+                            placeholder="F"
+                            className="px-2 py-1.5 rounded-lg border border-[#DDD6C8] bg-white text-xs" />
+                          <input type="number" value={editingMeal.carbs}
+                            onChange={(e) => setEditingMeal({...editingMeal, carbs: e.target.value})}
+                            placeholder="C"
+                            className="px-2 py-1.5 rounded-lg border border-[#DDD6C8] bg-white text-xs" />
+                        </div>
+                        <div className="flex gap-2">
+                          <button onClick={updateMyMeal}
+                            className="flex-1 py-1.5 bg-[#7A9471] text-white rounded-lg text-xs font-medium">
+                            保存
+                          </button>
+                          <button onClick={() => setEditingMeal(null)}
+                            className="flex-1 py-1.5 bg-[#DDD6C8] text-[#5C574F] rounded-lg text-xs font-medium">
+                            キャンセル
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between gap-2">
+                        <button onClick={() => selectFood(meal)} className="flex-1 text-left">
+                          <div className="text-sm font-medium text-[#2C2A26]">{meal.food_name}</div>
+                          <div className="text-xs text-[#8A8377]">
+                            {meal.calories}kcal · P{meal.protein}g · F{meal.fat}g · C{meal.carbs}g
+                          </div>
+                        </button>
+                        <button onClick={() => startEditMyMeal(meal)}
+                          className="text-xs text-[#7A9471] px-2 py-1 hover:bg-white rounded">
+                          編集
+                        </button>
+                        <button onClick={() => deleteMyMeal(meal.id)}
+                          className="text-xs text-[#E8835A] px-2 py-1 hover:bg-white rounded">
+                          削除
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+</div>
+            )}
+          </>
+        )}
+        </div>
+
         <div>
           <p className="text-sm font-medium text-[#5C574F] mb-2">よく食べるもの</p>
           <div className="grid grid-cols-2 gap-2">

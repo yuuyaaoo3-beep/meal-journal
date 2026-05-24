@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 
 export default function Weight() {
+  const today = new Date().toISOString().split('T')[0]
+  const [selectedDate, setSelectedDate] = useState(today)
   const [todayWeight, setTodayWeight] = useState('')
   const [memo, setMemo] = useState('')
   const [records, setRecords] = useState<any[]>([])
@@ -15,6 +17,19 @@ export default function Weight() {
     loadRecords()
     loadGoal()
   }, [])
+
+  // 日付が変わったら既存の記録を読み込む
+  useEffect(() => {
+    const existing = records.find(r => r.recorded_at === selectedDate)
+    if (existing) {
+      setTodayWeight(String(existing.weight))
+      setMemo(existing.memo || '')
+    } else {
+      setTodayWeight('')
+      setMemo('')
+    }
+    setSaved(false)
+  }, [selectedDate, records])
 
   const loadGoal = async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -46,20 +61,18 @@ export default function Weight() {
     setSaving(true)
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { alert('ログインが必要です'); setSaving(false); return }
-    const today = new Date().toISOString().split('T')[0]
     await supabase.from('weight_records').delete()
-      .eq('user_id', user.id).eq('recorded_at', today)
+      .eq('user_id', user.id).eq('recorded_at', selectedDate)
     const { error } = await supabase.from('weight_records').insert({
       user_id: user.id,
       weight: parseFloat(todayWeight),
       memo: memo || null,
-      recorded_at: today,
+      recorded_at: selectedDate,
     })
     if (error) {
       alert('保存に失敗しました')
     } else {
       setSaved(true)
-      setMemo('')
       loadRecords()
       setTimeout(() => setSaved(false), 3000)
     }
@@ -118,11 +131,30 @@ export default function Weight() {
           </div>
         )}
 
-        {/* 体重入力 */}
+        {/* 日付選択 + 体重入力 */}
         <div className="bg-white rounded-2xl p-5 border border-[#DDD6C8] mb-4">
+          {/* 日付選択 */}
+          <div className="mb-3">
+            <label className="block text-sm text-[#5C574F] mb-1">記録する日付</label>
+            <input
+              type="date"
+              value={selectedDate}
+              max={today}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl border border-[#DDD6C8] bg-[#F8F4ED] text-[#2C2A26] focus:outline-none focus:border-[#7A9471]"
+            />
+          </div>
+
+          {/* 既存記録バッジ */}
+          {records.find(r => r.recorded_at === selectedDate) && (
+            <div className="mb-3 px-3 py-2 bg-[#E4ECDF] rounded-lg text-xs text-[#7A9471] font-medium">
+              ✓ この日の記録があります。上書き保存されます。
+            </div>
+          )}
+
           <div className="flex gap-3 mb-3">
             <div className="flex-1">
-              <label className="block text-sm text-[#5C574F] mb-1">今日の体重</label>
+              <label className="block text-sm text-[#5C574F] mb-1">体重</label>
               <div className="relative">
                 <input
                   type="number"
@@ -161,37 +193,31 @@ export default function Weight() {
           <div className="bg-white rounded-2xl p-5 border border-[#DDD6C8] mb-4">
             <h2 className="text-base font-semibold text-[#2C2A26] mb-4">推移グラフ</h2>
             <svg viewBox="0 0 320 160" width="100%" className="block">
-              {/* グリッド線 */}
               {[0, 40, 80, 120].map(y => (
                 <line key={y} x1="0" y1={y} x2="320" y2={y}
                   stroke="#DDD6C8" strokeWidth="0.5" strokeDasharray="4 4" />
               ))}
-              {/* Y軸ラベル */}
               {[0, 40, 80, 120].map((y, i) => (
                 <text key={y} x="4" y={y + 4} fontSize="9" fill="#8A8377">
                   {(maxW - (i * range / 3)).toFixed(1)}
                 </text>
               ))}
-              {/* グラデーション */}
               <defs>
                 <linearGradient id="wGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#E8835A" stopOpacity="0.2" />
                   <stop offset="100%" stopColor="#E8835A" stopOpacity="0" />
                 </linearGradient>
               </defs>
-              {/* 塗りつぶし */}
               {weights.length > 1 && (
                 <path
                   d={`${pathD} L ${toX(weights.length - 1)} 140 L ${toX(0)} 140 Z`}
                   fill="url(#wGrad)"
                 />
               )}
-              {/* 折れ線 */}
               {weights.length > 1 && (
                 <path d={pathD} stroke="#E8835A" strokeWidth="2"
                   fill="none" strokeLinecap="round" strokeLinejoin="round" />
               )}
-              {/* 最新点 */}
               {weights.length > 0 && (
                 <>
                   <circle cx={toX(weights.length - 1)} cy={toY(weights[weights.length - 1])}
