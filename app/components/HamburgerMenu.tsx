@@ -81,6 +81,14 @@ export default function HamburgerMenu({ isPremium }: Props) {
               <div className="text-xs text-[#8A8377]">PFC・代謝・停滞期について</div>
             </div>
           </button>
+          <button onClick={() => handleNavigate('/my-meals')}
+            className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#F8F4ED] transition-colors text-left w-full">
+            <span className="text-xl">⭐</span>
+            <div>
+              <div className="text-sm font-medium text-[#2C2A26]">マイミール管理</div>
+              <div className="text-xs text-[#8A8377]">よく食べる料理を編集・削除</div>
+            </div>
+          </button>
 
           {isPremium ? (
             <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[#E4ECDF]">
