@@ -85,7 +85,11 @@ export default function Weight() {
   const remainingToGoal = latestWeight && goalWeight ? (latestWeight - goalWeight).toFixed(1) : null
 
   // グラフ描画用
-  const chartData = records.slice(-30)
+  // グラフ描画用
+  const [chartPeriod, setChartPeriod] = useState<'30' | '180' | 'all'>('all')
+  const chartData = chartPeriod === '30' ? records.slice(-30)
+    : chartPeriod === '180' ? records.slice(-180)
+    : records
   const weights = chartData.map(r => parseFloat(r.weight))
   const minW = weights.length > 0 ? Math.floor(Math.min(...weights)) - 1 : 50
   const maxW = weights.length > 0 ? Math.ceil(Math.max(...weights)) + 1 : 70
@@ -191,7 +195,21 @@ export default function Weight() {
         {/* グラフ */}
         {records.length > 1 && (
           <div className="bg-white rounded-2xl p-5 border border-[#DDD6C8] mb-4">
-            <h2 className="text-base font-semibold text-[#2C2A26] mb-4">推移グラフ</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-semibold text-[#2C2A26]">推移グラフ</h2>
+              <div className="flex gap-1">
+                {(['30', '180', 'all'] as const).map((p) => (
+                  <button key={p} onClick={() => setChartPeriod(p)}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
+                      chartPeriod === p
+                        ? 'bg-[#7A9471] text-white'
+                        : 'bg-[#F8F4ED] text-[#8A8377] hover:bg-[#EFE8DA]'
+                    }`}>
+                    {p === '30' ? '1ヶ月' : p === '180' ? '半年' : '全期間'}
+                  </button>
+                ))}
+              </div>
+            </div>
             <svg viewBox="0 0 320 160" width="100%" className="block">
               {[0, 40, 80, 120].map(y => (
                 <line key={y} x1="0" y1={y} x2="320" y2={y}
