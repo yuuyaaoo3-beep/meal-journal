@@ -57,7 +57,7 @@ const NAV_ITEMS = [
 
 export default function Navbar() {
   const pathname = usePathname()
-  if (pathname === '/login') return null
+  if (pathname === '/login' || pathname === '/onboarding') return null
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[#DDD6C8] z-50">

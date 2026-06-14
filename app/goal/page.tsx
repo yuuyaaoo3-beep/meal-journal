@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
 
 type Result = {
@@ -12,6 +13,7 @@ type Result = {
 }
 
 export default function Goal() {
+  const router = useRouter()
   const [age, setAge] = useState('')
   const [height, setHeight] = useState('')
   const [weight, setWeight] = useState('')
@@ -104,7 +106,10 @@ export default function Goal() {
       fat: result.fat,
       carbs: result.carbs,
     })
-    if (error) { alert('保存に失敗しました') } else { setSaved(true) }
+    if (error) { alert('保存に失敗しました') } else {
+      setSaved(true)
+      setTimeout(() => router.push('/'), 1500)
+    }
     setSaving(false)
   }
 

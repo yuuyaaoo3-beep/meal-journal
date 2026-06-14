@@ -30,7 +30,7 @@ export default function Login() {
     if (data) {
       window.location.href = '/'
     } else {
-      window.location.href = '/learn'
+      window.location.href = '/onboarding'
     }
   }
 }
