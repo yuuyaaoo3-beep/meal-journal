@@ -7,9 +7,18 @@ import HamburgerMenu from './components/HamburgerMenu'
 export default function Home() {
   const [goal, setGoal] = useState<any>(null)
   const [todayRecords, setTodayRecords] = useState<any[]>([])
-  const [todayWeight, setTodayWeight] = useState(null)
+  const [todayWeight, setTodayWeight] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [isPremium, setIsPremium] = useState(false)
+  const [aiStatus, setAiStatus] = useState<'idle' | 'loading' | 'streaming' | 'complete' | 'error'>('idle')
+  const [aiMealType, setAiMealType] = useState<'dinner' | 'next_day'>('dinner')
+  const [aiText, setAiText] = useState('')
+  const [aiError, setAiError] = useState<string | null>(null)
+  const [eatStyle, setEatStyle] = useState<'jisui' | 'convenience' | 'gaishoku' | null>(null)
+  const [selectedGrain, setSelectedGrain] = useState<string[]>([])
+  const [selectedProtein, setSelectedProtein] = useState<string[]>([])
+  const [selectedChain, setSelectedChain] = useState<string | null>(null)
+  const [selectedGenre, setSelectedGenre] = useState<string | null>(null)
 
   useEffect(() => {
     const load = async () => {
@@ -54,6 +63,59 @@ export default function Home() {
   const today = new Date()
   const days = ['日', '月', '火', '水', '木', '金', '土']
   const dateStr = `${today.getMonth() + 1}月${today.getDate()}日（${days[today.getDay()]}）`
+
+  const fetchSuggestion = async () => {
+    setAiStatus('loading')
+    setAiText('')
+    setAiError(null)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) throw new Error('no session')
+
+      const res = await fetch('/api/ai-meal-suggestion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accessToken: session.access_token,
+          mealType: aiMealType,
+          todayConsumed: total,
+          dailyGoal: {
+            calories: goal?.target_cal ?? 1750,
+            protein: goal?.protein ?? 100,
+            fat: goal?.fat ?? 50,
+            carbs: goal?.carbs ?? 200,
+          },
+          filters: {
+            eatStyle,
+            selectedGrain,
+            selectedProtein,
+            selectedChain,
+            selectedGenre,
+          },
+        }),
+      })
+
+      if (!res.ok) {
+        const errData = await res.json()
+        setAiError(errData.error ?? 'エラーが発生しました')
+        setAiStatus('error')
+        return
+      }
+
+      setAiStatus('streaming')
+      const reader = res.body!.getReader()
+      const decoder = new TextDecoder()
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        setAiText(prev => prev + decoder.decode(value, { stream: true }))
+      }
+      setAiStatus('complete')
+    } catch {
+      setAiError('提案の取得に失敗しました。しばらくしてからもう一度お試しください。')
+      setAiStatus('error')
+    }
+  }
 
   if (loading) {
     return (
@@ -210,7 +272,203 @@ export default function Home() {
         {isPremium && (
           <div className="mt-4 bg-gradient-to-br from-[#E4ECDF] to-[#F8F4ED] rounded-2xl p-5 border border-[#DDD6C8]">
             <p className="text-sm font-semibold text-[#7A9471] mb-1">🌟 プレミアムプラン利用中</p>
-            <p className="text-xs text-[#5C574F]">AI機能がすべて使い放題です</p>
+            <p className="text-xs text-[#5C574F] mb-4">AI機能がすべて使い放題です</p>
+
+            <Link href="/report"
+              className="flex items-center justify-between bg-white rounded-xl p-4 border border-[#DDD6C8] mb-3 hover:border-[#7A9471] transition-all">
+              <div>
+                <p className="text-sm font-semibold text-[#2C2A26]">📋 週次レポート</p>
+                <p className="text-xs text-[#8A8377] mt-0.5">1週間の振り返り・AIアドバイス</p>
+              </div>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8A8377" strokeWidth="2" strokeLinecap="round">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            </Link>
+
+            <div className="bg-white rounded-xl p-4 border border-[#DDD6C8]">
+              <p className="text-sm font-semibold text-[#2C2A26] mb-3">🤖 AI献立提案</p>
+
+              {(aiStatus === 'idle' || aiStatus === 'complete') && (
+                <>
+                  <div className="flex gap-2 mb-4">
+                    {([['dinner', '🌙 夕食'], ['next_day', '📅 翌日の献立']] as const).map(([v, label]) => (
+                      <button key={v} onClick={() => setAiMealType(v)}
+                        className={`flex-1 py-2 rounded-xl text-sm font-medium border transition-all
+                          ${aiMealType === v ? 'bg-[#7A9471] text-white border-[#7A9471]' : 'bg-[#F8F4ED] text-[#5C574F] border-[#DDD6C8]'}`}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <p className="text-xs font-semibold text-[#8A8377] mb-2">食事スタイル</p>
+                  <div className="flex gap-2 mb-3 flex-wrap">
+                    {([['jisui', '🏠 自炊'], ['convenience', '🏪 コンビニ'], ['gaishoku', '🍽️ 外食']] as const).map(([v, label]) => (
+                      <button key={v}
+                        onClick={() => { setEatStyle(eatStyle === v ? null : v); setSelectedGrain([]); setSelectedProtein([]); setSelectedChain(null); setSelectedGenre(null) }}
+                        className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all
+                          ${eatStyle === v ? 'bg-[#E8835A] text-white border-[#E8835A]' : 'bg-[#F8F4ED] text-[#5C574F] border-[#DDD6C8]'}`}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {eatStyle === 'jisui' && (
+                    <>
+                      <p className="text-xs font-semibold text-[#8A8377] mb-2">主食</p>
+                      <div className="flex gap-2 mb-3 flex-wrap">
+                        {([['rice', '🍚 米'], ['noodle', '🍜 麺'], ['bread', '🍞 パン']] as const).map(([v, label]) => (
+                          <button key={v}
+                            onClick={() => setSelectedGrain(g => g.includes(v) ? g.filter(x => x !== v) : [...g, v])}
+                            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all
+                              ${selectedGrain.includes(v) ? 'bg-[#7A9471] text-white border-[#7A9471]' : 'bg-[#F8F4ED] text-[#5C574F] border-[#DDD6C8]'}`}>
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                      <p className="text-xs font-semibold text-[#8A8377] mb-2">主菜</p>
+                      <div className="flex gap-2 mb-3 flex-wrap">
+                        {([['meat', '🥩 肉'], ['fish', '🐟 魚'], ['egg_tofu', '🥚 卵・豆腐']] as const).map(([v, label]) => (
+                          <button key={v}
+                            onClick={() => setSelectedProtein(p => p.includes(v) ? p.filter(x => x !== v) : [...p, v])}
+                            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all
+                              ${selectedProtein.includes(v) ? 'bg-[#7A9471] text-white border-[#7A9471]' : 'bg-[#F8F4ED] text-[#5C574F] border-[#DDD6C8]'}`}>
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+
+                  {eatStyle === 'convenience' && (
+                    <>
+                      <p className="text-xs font-semibold text-[#8A8377] mb-2">チェーン</p>
+                      <div className="flex gap-2 mb-3 flex-wrap">
+                        {([['seven', '🟠 セブン'], ['famima', '🔵 ファミマ'], ['lawson', '⭕ ローソン'], ['any', '🏪 どこでも']] as const).map(([v, label]) => (
+                          <button key={v}
+                            onClick={() => setSelectedChain(selectedChain === v ? null : v)}
+                            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all
+                              ${selectedChain === v ? 'bg-[#7A9471] text-white border-[#7A9471]' : 'bg-[#F8F4ED] text-[#5C574F] border-[#DDD6C8]'}`}>
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+
+                  {eatStyle === 'gaishoku' && (
+                    <>
+                      <p className="text-xs font-semibold text-[#8A8377] mb-2">ジャンル</p>
+                      <div className="flex gap-2 mb-3 flex-wrap">
+                        {([['washoku', '🍱 和食'], ['yoshoku', '🍝 洋食'], ['chuka', '🥟 中華'], ['fast', '🍔 ファスト']] as const).map(([v, label]) => (
+                          <button key={v}
+                            onClick={() => setSelectedGenre(selectedGenre === v ? null : v)}
+                            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all
+                              ${selectedGenre === v ? 'bg-[#7A9471] text-white border-[#7A9471]' : 'bg-[#F8F4ED] text-[#5C574F] border-[#DDD6C8]'}`}>
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+
+                  {aiStatus === 'complete' && (
+                    <div className="text-sm text-[#2C2A26] leading-relaxed whitespace-pre-wrap bg-[#F8F4ED] rounded-xl p-3 border border-[#DDD6C8] mb-3">
+                      {aiText}
+                    </div>
+                  )}
+
+                  <button onClick={fetchSuggestion}
+                    className="w-full py-3 bg-[#7A9471] text-white rounded-xl font-medium hover:bg-[#6A8462] transition-colors text-sm">
+                    {aiStatus === 'complete' ? '🔄 もう一度提案してもらう' : '✨ 献立を提案してもらう'}
+                  </button>
+                </>
+              )}
+
+              {(aiStatus === 'loading') && (
+                <>
+                  <div className="flex gap-2 mb-3 opacity-50 pointer-events-none">
+                    <button
+                      className={`flex-1 py-2 rounded-xl text-sm font-medium border transition-all
+                        ${aiMealType === 'dinner'
+                          ? 'bg-[#7A9471] text-white border-[#7A9471]'
+                          : 'bg-[#F8F4ED] text-[#5C574F] border-[#DDD6C8]'}`}>
+                      🌙 夕食
+                    </button>
+                    <button
+                      className={`flex-1 py-2 rounded-xl text-sm font-medium border transition-all
+                        ${aiMealType === 'next_day'
+                          ? 'bg-[#7A9471] text-white border-[#7A9471]'
+                          : 'bg-[#F8F4ED] text-[#5C574F] border-[#DDD6C8]'}`}>
+                      📅 翌日の献立
+                    </button>
+                  </div>
+                  <div className="space-y-2 mt-2">
+                    <div className="h-3 bg-[#EFE8DA] rounded-full w-full animate-pulse" />
+                    <div className="h-3 bg-[#EFE8DA] rounded-full w-4/5 animate-pulse" />
+                    <div className="h-3 bg-[#EFE8DA] rounded-full w-3/5 animate-pulse" />
+                  </div>
+                  <p className="text-xs text-[#8A8377] mt-2 text-center">AIが考えています...</p>
+                </>
+              )}
+
+              {(aiStatus === 'streaming') && (
+                <>
+                  <div className="flex gap-2 mb-3 opacity-50 pointer-events-none">
+                    <button
+                      className={`flex-1 py-2 rounded-xl text-sm font-medium border transition-all
+                        ${aiMealType === 'dinner'
+                          ? 'bg-[#7A9471] text-white border-[#7A9471]'
+                          : 'bg-[#F8F4ED] text-[#5C574F] border-[#DDD6C8]'}`}>
+                      🌙 夕食
+                    </button>
+                    <button
+                      className={`flex-1 py-2 rounded-xl text-sm font-medium border transition-all
+                        ${aiMealType === 'next_day'
+                          ? 'bg-[#7A9471] text-white border-[#7A9471]'
+                          : 'bg-[#F8F4ED] text-[#5C574F] border-[#DDD6C8]'}`}>
+                      📅 翌日の献立
+                    </button>
+                  </div>
+                  <div className="text-sm text-[#2C2A26] leading-relaxed whitespace-pre-wrap bg-[#F8F4ED] rounded-xl p-3 min-h-[80px] border border-[#DDD6C8]">
+                    {aiText}
+                    <span className="inline-block w-1 h-3 bg-[#7A9471] animate-pulse ml-0.5 align-middle" />
+                  </div>
+                </>
+              )}
+
+
+              {(aiStatus === 'error') && (
+                <>
+                  <div className="flex gap-2 mb-3">
+                    <button
+                      onClick={() => setAiMealType('dinner')}
+                      className={`flex-1 py-2 rounded-xl text-sm font-medium border transition-all
+                        ${aiMealType === 'dinner'
+                          ? 'bg-[#7A9471] text-white border-[#7A9471]'
+                          : 'bg-[#F8F4ED] text-[#5C574F] border-[#DDD6C8]'}`}>
+                      🌙 夕食
+                    </button>
+                    <button
+                      onClick={() => setAiMealType('next_day')}
+                      className={`flex-1 py-2 rounded-xl text-sm font-medium border transition-all
+                        ${aiMealType === 'next_day'
+                          ? 'bg-[#7A9471] text-white border-[#7A9471]'
+                          : 'bg-[#F8F4ED] text-[#5C574F] border-[#DDD6C8]'}`}>
+                      📅 翌日の献立
+                    </button>
+                  </div>
+                  <div className="bg-[#FCEEE5] border border-[#F5B89D] rounded-xl p-3 mb-3">
+                    <p className="text-xs text-[#E8835A] font-medium">エラーが発生しました</p>
+                    <p className="text-xs text-[#5C574F] mt-0.5">{aiError}</p>
+                  </div>
+                  <button
+                    onClick={fetchSuggestion}
+                    className="w-full py-2.5 bg-[#7A9471] text-white rounded-xl font-medium hover:bg-[#6A8462] transition-colors text-sm">
+                    ✨ もう一度試す
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         )}
 

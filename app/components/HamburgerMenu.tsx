@@ -90,6 +90,17 @@ export default function HamburgerMenu({ isPremium }: Props) {
             </div>
           </button>
 
+          {isPremium && (
+            <button onClick={() => handleNavigate('/report')}
+              className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#E4ECDF] transition-colors text-left w-full bg-[#E4ECDF]">
+              <span className="text-xl">📋</span>
+              <div>
+                <div className="text-sm font-medium text-[#7A9471]">週次レポート</div>
+                <div className="text-xs text-[#7A9471] opacity-80">1週間の振り返り・AIアドバイス</div>
+              </div>
+            </button>
+          )}
+
           {isPremium ? (
             <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[#E4ECDF]">
               <span className="text-xl">🌟</span>
