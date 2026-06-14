@@ -86,6 +86,19 @@ export default function Login() {
             {isSignUp ? 'すでにアカウントをお持ちの方' : 'アカウントをお持ちでない方'}
           </button>
         </div>
+        {isSignUp && (
+          <p className="text-xs text-[#8A8377] text-center mt-4">
+            アカウントを作成することで、
+            <a href="/terms" className="underline hover:text-[#7A9471]">利用規約</a>
+            および
+            <a href="/privacy" className="underline hover:text-[#7A9471]">プライバシーポリシー</a>
+            に同意したものとみなされます。
+          </p>
+        )}
+      </div>
+      <div className="mt-8 text-center text-xs text-[#8A8377] space-x-4">
+        <a href="/terms" className="hover:underline">利用規約</a>
+        <a href="/privacy" className="hover:underline">プライバシーポリシー</a>
       </div>
     </div>
   )

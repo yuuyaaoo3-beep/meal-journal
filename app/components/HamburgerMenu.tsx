@@ -121,13 +121,19 @@ export default function HamburgerMenu({ isPremium }: Props) {
           )}
         </div>
 
-        {/* ログアウト - ナビバーの上に固定 */}
+        {/* ログアウト・法的リンク - 下部固定 */}
         <div className="absolute bottom-24 left-0 right-0 px-4">
           <button onClick={handleLogout}
             className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#F8F4ED] transition-colors text-left w-full">
             <span className="text-xl">🚪</span>
             <div className="text-sm font-medium text-[#8A8377]">ログアウト</div>
           </button>
+          <div className="flex gap-4 px-4 mt-2">
+            <button onClick={() => handleNavigate('/terms')}
+              className="text-xs text-[#8A8377] hover:underline">利用規約</button>
+            <button onClick={() => handleNavigate('/privacy')}
+              className="text-xs text-[#8A8377] hover:underline">プライバシーポリシー</button>
+          </div>
         </div>
       </div>
     </>
