@@ -37,6 +37,7 @@ export default function Record() {
   const [myMealSearch, setMyMealSearch] = useState('')
   const [editingMeal, setEditingMeal] = useState<any>(null)
   const [inputMode, setInputMode] = useState<'none' | 'manual' | 'mymeal'>('none')
+  const [selectedMyMealIds, setSelectedMyMealIds] = useState<string[]>([])
 
   useEffect(() => {
     loadRecords()
@@ -94,6 +95,26 @@ export default function Record() {
     setFat(String(food.fat))
     setCarbs(String(food.carbs))
     setShowMyMeals(false)
+    setSelectedMyMealIds([])
+    setInputMode('mymeal')
+  }
+
+  const toggleMyMealSelection = (id: string) => {
+    setSelectedMyMealIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    )
+  }
+
+  const confirmMyMealSelection = () => {
+    const selected = myMeals.filter(m => selectedMyMealIds.includes(m.id))
+    if (selected.length === 0) return
+    setFoodName(selected.map(m => m.food_name).join('・'))
+    setCalories(String(selected.reduce((s, m) => s + (m.calories || 0), 0)))
+    setProtein(String(Math.round(selected.reduce((s, m) => s + (m.protein || 0), 0) * 10) / 10))
+    setFat(String(Math.round(selected.reduce((s, m) => s + (m.fat || 0), 0) * 10) / 10))
+    setCarbs(String(Math.round(selected.reduce((s, m) => s + (m.carbs || 0), 0) * 10) / 10))
+    setShowMyMeals(false)
+    setSelectedMyMealIds([])
     setInputMode('mymeal')
   }
 
@@ -122,6 +143,7 @@ export default function Record() {
       setCarbs('')
       setInputMode('none')
       setShowMyMeals(false)
+      setSelectedMyMealIds([])
       loadRecords()
     }
     setSaving(false)
@@ -273,7 +295,7 @@ export default function Record() {
             </button>
           </div>
 
-          {/* マイミールピッカー */}
+          {/* マイミールピッカー（複数選択） */}
           {showMyMeals && (
             <div className="mb-4">
               <input
@@ -288,17 +310,41 @@ export default function Record() {
               ) : myMeals.filter(m => m.food_name.includes(myMealSearch)).length === 0 ? (
                 <p className="text-xs text-[#8A8377] text-center py-4">見つかりませんでした</p>
               ) : (
-                <div className="flex flex-col gap-2 max-h-52 overflow-y-auto">
-                  {myMeals.filter(m => m.food_name.includes(myMealSearch)).map((meal) => (
-                    <button key={meal.id} onClick={() => selectFood(meal)}
-                      className="bg-[#F8F4ED] rounded-xl p-3 border border-[#DDD6C8] text-left hover:border-[#7A9471] transition-all">
-                      <div className="text-sm font-medium text-[#2C2A26]">{meal.food_name}</div>
-                      <div className="text-xs text-[#8A8377]">
-                        {meal.calories}kcal · P{meal.protein}g · F{meal.fat}g · C{meal.carbs}g
-                      </div>
-                    </button>
-                  ))}
+                <div className="flex flex-col gap-2 max-h-52 overflow-y-auto mb-3">
+                  {myMeals.filter(m => m.food_name.includes(myMealSearch)).map((meal) => {
+                    const isSelected = selectedMyMealIds.includes(meal.id)
+                    return (
+                      <button key={meal.id} onClick={() => toggleMyMealSelection(meal.id)}
+                        className={`rounded-xl p-3 border text-left transition-all flex items-center gap-3 ${
+                          isSelected
+                            ? 'bg-[#E4ECDF] border-[#7A9471]'
+                            : 'bg-[#F8F4ED] border-[#DDD6C8] hover:border-[#7A9471]'
+                        }`}>
+                        <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                          isSelected ? 'bg-[#7A9471] border-[#7A9471]' : 'border-[#DDD6C8] bg-white'
+                        }`}>
+                          {isSelected && (
+                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                              <path d="M2 6l3 3 5-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium text-[#2C2A26] truncate">{meal.food_name}</div>
+                          <div className="text-xs text-[#8A8377]">
+                            {meal.calories}kcal · P{meal.protein}g · F{meal.fat}g · C{meal.carbs}g
+                          </div>
+                        </div>
+                      </button>
+                    )
+                  })}
                 </div>
+              )}
+              {selectedMyMealIds.length > 0 && (
+                <button onClick={confirmMyMealSelection}
+                  className="w-full py-2.5 bg-[#7A9471] text-white rounded-xl text-sm font-medium hover:bg-[#6A8462] transition-colors">
+                  {selectedMyMealIds.length}品を選択して追加 →
+                </button>
               )}
             </div>
           )}
