@@ -90,6 +90,15 @@ export default function HamburgerMenu({ isPremium }: Props) {
             </div>
           </button>
 
+          <button onClick={() => handleNavigate('/my-dishes')}
+            className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#F8F4ED] transition-colors text-left w-full">
+            <span className="text-xl">🍽</span>
+            <div>
+              <div className="text-sm font-medium text-[#2C2A26]">マイディッシュ管理</div>
+              <div className="text-xs text-[#8A8377]">よく食べる組み合わせを登録</div>
+            </div>
+          </button>
+
           {isPremium && (
             <button onClick={() => handleNavigate('/report')}
               className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#E4ECDF] transition-colors text-left w-full bg-[#E4ECDF]">
