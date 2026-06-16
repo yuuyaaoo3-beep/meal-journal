@@ -36,6 +36,7 @@ export default function Record() {
   const [showMyMeals, setShowMyMeals] = useState(false)
   const [myMealSearch, setMyMealSearch] = useState('')
   const [editingMeal, setEditingMeal] = useState<any>(null)
+  const [inputMode, setInputMode] = useState<'none' | 'manual' | 'mymeal'>('none')
 
   useEffect(() => {
     loadRecords()
@@ -93,6 +94,7 @@ export default function Record() {
     setFat(String(food.fat))
     setCarbs(String(food.carbs))
     setShowMyMeals(false)
+    setInputMode('mymeal')
   }
 
   const saveRecord = async () => {
@@ -118,6 +120,8 @@ export default function Record() {
       setProtein('')
       setFat('')
       setCarbs('')
+      setInputMode('none')
+      setShowMyMeals(false)
       loadRecords()
     }
     setSaving(false)
@@ -251,119 +255,92 @@ export default function Record() {
         )}
 
         <div className="bg-white rounded-2xl p-5 border border-[#DDD6C8] mb-4">
-          <div className="mb-3">
-            <label className="block text-sm text-[#5C574F] mb-1">食べたもの</label>
-            <input type="text" value={foodName} onChange={(e) => setFoodName(e.target.value)}
-              placeholder="例：鮭の塩焼き、ごはん"
-              className="w-full px-4 py-3 rounded-xl border border-[#DDD6C8] bg-[#F8F4ED] text-[#2C2A26] focus:outline-none focus:border-[#7A9471]" />
-          </div>
-          <div className="grid grid-cols-2 gap-3 mb-3">
-            {[
-              { label: 'カロリー (kcal)', val: calories, set: setCalories, placeholder: '300' },
-              { label: 'タンパク質 (g)', val: protein, set: setProtein, placeholder: '20' },
-              { label: '脂質 (g)', val: fat, set: setFat, placeholder: '10' },
-              { label: '炭水化物 (g)', val: carbs, set: setCarbs, placeholder: '40' },
-            ].map((item) => (
-              <div key={item.label}>
-                <label className="block text-xs text-[#5C574F] mb-1">{item.label}</label>
-                <input type="number" value={item.val} onChange={(e) => item.set(e.target.value)}
-                  placeholder={item.placeholder}
-                  className="w-full px-3 py-2.5 rounded-xl border border-[#DDD6C8] bg-[#F8F4ED] text-[#2C2A26] text-sm focus:outline-none focus:border-[#7A9471]" />
-              </div>
-            ))}
-          </div>
-          <div className="flex gap-2">
-            <button onClick={saveRecord} disabled={saving}
-              className="flex-1 py-3 bg-[#7A9471] text-white rounded-xl font-medium hover:bg-[#6A8462] transition-colors disabled:opacity-50">
-              {saving ? '保存中...' : '記録する'}
+          {/* モード選択ボタン */}
+          <div className="flex gap-2 mb-4">
+            <button
+              onClick={() => { setShowMyMeals(!showMyMeals); if (inputMode === 'manual') setInputMode('none') }}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition-all ${
+                showMyMeals ? 'bg-[#7A9471] text-white border-[#7A9471]' : 'bg-[#F8F4ED] text-[#5C574F] border-[#DDD6C8]'
+              }`}>
+              ⭐ マイミールから選択
             </button>
-            <button onClick={saveToMyMeals}
-              className="px-4 py-3 bg-[#FCEEE5] text-[#E8835A] rounded-xl font-medium hover:bg-[#F5D5C5] transition-colors text-sm whitespace-nowrap">
-              ⭐ マイミール保存
+            <button
+              onClick={() => { setInputMode('manual'); setShowMyMeals(false) }}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition-all ${
+                inputMode === 'manual' ? 'bg-[#E8835A] text-white border-[#E8835A]' : 'bg-[#F8F4ED] text-[#5C574F] border-[#DDD6C8]'
+              }`}>
+              ✏️ 手入力
             </button>
           </div>
-        </div>
 
-        {/* マイミール */}
-        <div className="bg-white rounded-2xl p-5 border border-[#DDD6C8] mb-4">
-          <button onClick={() => setShowMyMeals(!showMyMeals)}
-            className="w-full flex items-center justify-between mb-3">
-            <p className="text-sm font-medium text-[#5C574F]">⭐ マイミール ({myMeals.length})</p>
-            <span className="text-xs text-[#8A8377]">{showMyMeals ? '▼' : '▶'}</span>
-          </button>
+          {/* マイミールピッカー */}
           {showMyMeals && (
-  <>
-    <input
-      type="text"
-      value={myMealSearch}
-      onChange={(e) => setMyMealSearch(e.target.value)}
-      placeholder="マイミールを検索..."
-      className="w-full px-3 py-2.5 rounded-xl border border-[#DDD6C8] bg-[#F8F4ED] text-sm focus:outline-none focus:border-[#7A9471] mb-3"
-    />
-    {myMeals.filter(m => m.food_name.includes(myMealSearch)).length === 0 ? (
-      <p className="text-xs text-[#8A8377] text-center py-4">見つかりませんでした</p>
-    ) : (
-      <div className="flex flex-col gap-2">
-        {myMeals.filter(m => m.food_name.includes(myMealSearch)).map((meal) => (
-                  <div key={meal.id} className="bg-[#F8F4ED] rounded-xl p-3 border border-[#DDD6C8]">
-                    {editingMeal?.id === meal.id ? (
-                      <div className="flex flex-col gap-2">
-                        <input type="text" value={editingMeal.food_name}
-                          onChange={(e) => setEditingMeal({...editingMeal, food_name: e.target.value})}
-                          className="px-3 py-2 rounded-lg border border-[#DDD6C8] bg-white text-sm" />
-                        <div className="grid grid-cols-4 gap-1">
-                          <input type="number" value={editingMeal.calories}
-                            onChange={(e) => setEditingMeal({...editingMeal, calories: e.target.value})}
-                            placeholder="kcal"
-                            className="px-2 py-1.5 rounded-lg border border-[#DDD6C8] bg-white text-xs" />
-                          <input type="number" value={editingMeal.protein}
-                            onChange={(e) => setEditingMeal({...editingMeal, protein: e.target.value})}
-                            placeholder="P"
-                            className="px-2 py-1.5 rounded-lg border border-[#DDD6C8] bg-white text-xs" />
-                          <input type="number" value={editingMeal.fat}
-                            onChange={(e) => setEditingMeal({...editingMeal, fat: e.target.value})}
-                            placeholder="F"
-                            className="px-2 py-1.5 rounded-lg border border-[#DDD6C8] bg-white text-xs" />
-                          <input type="number" value={editingMeal.carbs}
-                            onChange={(e) => setEditingMeal({...editingMeal, carbs: e.target.value})}
-                            placeholder="C"
-                            className="px-2 py-1.5 rounded-lg border border-[#DDD6C8] bg-white text-xs" />
-                        </div>
-                        <div className="flex gap-2">
-                          <button onClick={updateMyMeal}
-                            className="flex-1 py-1.5 bg-[#7A9471] text-white rounded-lg text-xs font-medium">
-                            保存
-                          </button>
-                          <button onClick={() => setEditingMeal(null)}
-                            className="flex-1 py-1.5 bg-[#DDD6C8] text-[#5C574F] rounded-lg text-xs font-medium">
-                            キャンセル
-                          </button>
-                        </div>
+            <div className="mb-4">
+              <input
+                type="text"
+                value={myMealSearch}
+                onChange={(e) => setMyMealSearch(e.target.value)}
+                placeholder="マイミールを検索..."
+                className="w-full px-3 py-2.5 rounded-xl border border-[#DDD6C8] bg-[#F8F4ED] text-sm focus:outline-none focus:border-[#7A9471] mb-3"
+              />
+              {myMeals.length === 0 ? (
+                <p className="text-xs text-[#8A8377] text-center py-4">まだマイミールがありません</p>
+              ) : myMeals.filter(m => m.food_name.includes(myMealSearch)).length === 0 ? (
+                <p className="text-xs text-[#8A8377] text-center py-4">見つかりませんでした</p>
+              ) : (
+                <div className="flex flex-col gap-2 max-h-52 overflow-y-auto">
+                  {myMeals.filter(m => m.food_name.includes(myMealSearch)).map((meal) => (
+                    <button key={meal.id} onClick={() => selectFood(meal)}
+                      className="bg-[#F8F4ED] rounded-xl p-3 border border-[#DDD6C8] text-left hover:border-[#7A9471] transition-all">
+                      <div className="text-sm font-medium text-[#2C2A26]">{meal.food_name}</div>
+                      <div className="text-xs text-[#8A8377]">
+                        {meal.calories}kcal · P{meal.protein}g · F{meal.fat}g · C{meal.carbs}g
                       </div>
-                    ) : (
-                      <div className="flex items-center justify-between gap-2">
-                        <button onClick={() => selectFood(meal)} className="flex-1 text-left">
-                          <div className="text-sm font-medium text-[#2C2A26]">{meal.food_name}</div>
-                          <div className="text-xs text-[#8A8377]">
-                            {meal.calories}kcal · P{meal.protein}g · F{meal.fat}g · C{meal.carbs}g
-                          </div>
-                        </button>
-                        <button onClick={() => startEditMyMeal(meal)}
-                          className="text-xs text-[#7A9471] px-2 py-1 hover:bg-white rounded">
-                          編集
-                        </button>
-                        <button onClick={() => deleteMyMeal(meal.id)}
-                          className="text-xs text-[#E8835A] px-2 py-1 hover:bg-white rounded">
-                          削除
-                        </button>
-                      </div>
-                    )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 入力フォーム（手入力 or マイミール選択後） */}
+          {(inputMode === 'manual' || inputMode === 'mymeal') && (
+            <>
+              <div className="mb-3">
+                <label className="block text-sm text-[#5C574F] mb-1">食べたもの</label>
+                <input type="text" value={foodName} onChange={(e) => setFoodName(e.target.value)}
+                  placeholder="例：鮭の塩焼き、ごはん"
+                  className="w-full px-4 py-3 rounded-xl border border-[#DDD6C8] bg-[#F8F4ED] text-[#2C2A26] focus:outline-none focus:border-[#7A9471]" />
+              </div>
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                {[
+                  { label: 'カロリー (kcal)', val: calories, set: setCalories, placeholder: '300' },
+                  { label: 'タンパク質 (g)', val: protein, set: setProtein, placeholder: '20' },
+                  { label: '脂質 (g)', val: fat, set: setFat, placeholder: '10' },
+                  { label: '炭水化物 (g)', val: carbs, set: setCarbs, placeholder: '40' },
+                ].map((item) => (
+                  <div key={item.label}>
+                    <label className="block text-xs text-[#5C574F] mb-1">{item.label}</label>
+                    <input type="number" value={item.val} onChange={(e) => item.set(e.target.value)}
+                      placeholder={item.placeholder}
+                      className="w-full px-3 py-2.5 rounded-xl border border-[#DDD6C8] bg-[#F8F4ED] text-[#2C2A26] text-sm focus:outline-none focus:border-[#7A9471]" />
                   </div>
                 ))}
-</div>
-            )}
-          </>
-        )}
+              </div>
+              <div className="flex gap-2">
+                <button onClick={saveRecord} disabled={saving}
+                  className="flex-1 py-3 bg-[#7A9471] text-white rounded-xl font-medium hover:bg-[#6A8462] transition-colors disabled:opacity-50">
+                  {saving ? '保存中...' : '記録する'}
+                </button>
+                {inputMode === 'manual' && (
+                  <button onClick={saveToMyMeals}
+                    className="px-4 py-3 bg-[#FCEEE5] text-[#E8835A] rounded-xl font-medium hover:bg-[#F5D5C5] transition-colors text-sm whitespace-nowrap">
+                    ⭐ 保存
+                  </button>
+                )}
+              </div>
+            </>
+          )}
         </div>
 
         <div>
