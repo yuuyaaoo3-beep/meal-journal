@@ -213,9 +213,11 @@ export default function Record() {
         {/* 日付選択 */}
         <div className="bg-white rounded-2xl p-4 border border-[#DDD6C8] mb-4">
           <label className="block text-xs text-[#5C574F] mb-1">記録する日付</label>
-          <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)}
-            max={new Date().toISOString().split('T')[0]}
-            className="block w-full max-w-full min-w-0 px-3 py-2.5 rounded-xl border border-[#DDD6C8] bg-[#F8F4ED] text-[#2C2A26] focus:outline-none focus:border-[#7A9471]" />
+          <div className="flex">
+            <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)}
+              max={new Date().toISOString().split('T')[0]}
+              className="flex-1 min-w-0 px-3 py-2.5 rounded-xl border border-[#DDD6C8] bg-[#F8F4ED] text-[#2C2A26] focus:outline-none focus:border-[#7A9471]" />
+          </div>
         </div>
 
         <div className="bg-white rounded-2xl p-5 border border-[#DDD6C8] mb-4">

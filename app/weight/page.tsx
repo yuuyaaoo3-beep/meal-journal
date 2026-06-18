@@ -154,13 +154,15 @@ export default function Weight() {
           {/* 日付選択 */}
           <div className="mb-3">
             <label className="block text-sm text-[#5C574F] mb-1">記録する日付</label>
-            <input
-              type="date"
-              value={selectedDate}
-              max={today}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="block w-full max-w-full min-w-0 px-3 py-3 rounded-xl border border-[#DDD6C8] bg-[#F8F4ED] text-[#2C2A26] focus:outline-none focus:border-[#7A9471]"
-            />
+            <div className="flex">
+              <input
+                type="date"
+                value={selectedDate}
+                max={today}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="flex-1 min-w-0 px-3 py-3 rounded-xl border border-[#DDD6C8] bg-[#F8F4ED] text-[#2C2A26] focus:outline-none focus:border-[#7A9471]"
+              />
+            </div>
           </div>
 
           {/* 既存記録バッジ */}
