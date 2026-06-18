@@ -12,6 +12,7 @@ export default function Weight() {
   const [saved, setSaved] = useState(false)
   const [startWeight, setStartWeight] = useState<number | null>(null)
   const [goalWeight, setGoalWeight] = useState<number | null>(null)
+  const [showAllRecords, setShowAllRecords] = useState(false)
 
   useEffect(() => {
     loadRecords()
@@ -79,6 +80,19 @@ export default function Weight() {
     setSaving(false)
   }
 
+  const deleteWeight = async (date: string) => {
+    if (!confirm('この記録を削除しますか？')) return
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    await supabase.from('weight_records').delete()
+      .eq('user_id', user.id).eq('recorded_at', date)
+    if (selectedDate === date) {
+      setTodayWeight('')
+      setMemo('')
+    }
+    loadRecords()
+  }
+
   const latestWeight = records.length > 0 ? records[records.length - 1].weight : null
   const firstWeight = records.length > 0 ? records[0].weight : startWeight
   const delta = latestWeight && firstWeight ? (latestWeight - firstWeight).toFixed(1) : null
@@ -140,13 +154,15 @@ export default function Weight() {
           {/* 日付選択 */}
           <div className="mb-3">
             <label className="block text-sm text-[#5C574F] mb-1">記録する日付</label>
-            <input
-              type="date"
-              value={selectedDate}
-              max={today}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-[#DDD6C8] bg-[#F8F4ED] text-[#2C2A26] focus:outline-none focus:border-[#7A9471]"
-            />
+            <div className="overflow-hidden">
+              <input
+                type="date"
+                value={selectedDate}
+                max={today}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="w-full min-w-0 px-4 py-3 rounded-xl border border-[#DDD6C8] bg-[#F8F4ED] text-[#2C2A26] focus:outline-none focus:border-[#7A9471]"
+              />
+            </div>
           </div>
 
           {/* 既存記録バッジ */}
@@ -248,16 +264,24 @@ export default function Weight() {
           </div>
         )}
 
-        {/* 記録一覧（直近7件） */}
+        {/* 記録一覧 */}
         {records.length > 0 && (
           <div className="bg-white rounded-2xl p-5 border border-[#DDD6C8]">
             <h2 className="text-base font-semibold text-[#2C2A26] mb-3">最近の記録</h2>
-            <div className="flex flex-col gap-2">
-              {records.slice(-7).reverse().map((r, i) => {
-                const prev = records[records.length - 2 - i]
+            <div className="flex flex-col">
+              {(showAllRecords ? [...records].reverse() : records.slice(-7).reverse()).map((r) => {
+                const idx = records.findIndex(rec => rec.id === r.id)
+                const prev = idx > 0 ? records[idx - 1] : null
                 const diff = prev ? (r.weight - prev.weight).toFixed(1) : null
+                const isSelected = selectedDate === r.recorded_at
                 return (
-                  <div key={r.id} className="flex items-center justify-between py-2 border-b border-[#EFE8DA] last:border-0">
+                  <div
+                    key={r.id}
+                    onClick={() => { setSelectedDate(r.recorded_at); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+                    className={`flex items-center justify-between py-2.5 border-b border-[#EFE8DA] last:border-0 cursor-pointer rounded-lg px-2 -mx-2 transition-colors ${
+                      isSelected ? 'bg-[#E4ECDF]' : 'hover:bg-[#F8F4ED]'
+                    }`}
+                  >
                     <div>
                       <span className="text-sm text-[#5C574F]">{r.recorded_at}</span>
                       {r.memo && <span className="text-xs text-[#8A8377] ml-2">{r.memo}</span>}
@@ -269,11 +293,26 @@ export default function Weight() {
                         </span>
                       )}
                       <span className="text-sm font-semibold text-[#2C2A26]">{r.weight}kg</span>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); deleteWeight(r.recorded_at) }}
+                        className="text-[#8A8377] hover:text-red-400 transition-colors text-lg leading-none ml-1"
+                        aria-label="削除"
+                      >
+                        ×
+                      </button>
                     </div>
                   </div>
                 )
               })}
             </div>
+            {records.length > 7 && (
+              <button
+                onClick={() => setShowAllRecords(!showAllRecords)}
+                className="mt-3 w-full py-2 text-sm text-[#7A9471] hover:text-[#6A8462] font-medium transition-colors"
+              >
+                {showAllRecords ? '折りたたむ ▲' : `全て表示する（${records.length}件） ▼`}
+              </button>
+            )}
           </div>
         )}
 
