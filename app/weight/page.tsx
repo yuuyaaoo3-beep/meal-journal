@@ -154,15 +154,13 @@ export default function Weight() {
           {/* 日付選択 */}
           <div className="mb-3">
             <label className="block text-sm text-[#5C574F] mb-1">記録する日付</label>
-            <div className="overflow-hidden">
-              <input
-                type="date"
-                value={selectedDate}
-                max={today}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="w-full min-w-0 px-4 py-3 rounded-xl border border-[#DDD6C8] bg-[#F8F4ED] text-[#2C2A26] focus:outline-none focus:border-[#7A9471]"
-              />
-            </div>
+            <input
+              type="date"
+              value={selectedDate}
+              max={today}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="block w-full max-w-full min-w-0 px-3 py-3 rounded-xl border border-[#DDD6C8] bg-[#F8F4ED] text-[#2C2A26] focus:outline-none focus:border-[#7A9471]"
+            />
           </div>
 
           {/* 既存記録バッジ */}
