@@ -266,10 +266,16 @@ export default function Record() {
     }
   }
 
+  const FREE_MY_MEAL_LIMIT = 10
+
   const saveToMyMeals = async () => {
     if (!foodName) return
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
+    if (!isPremium && myMeals.length >= FREE_MY_MEAL_LIMIT) {
+      setFormError(`マイミールの保存は無料プランでは${FREE_MY_MEAL_LIMIT}件までです。プレミアムプランで無制限になります。`)
+      return
+    }
     const { error } = await supabase.from('my_meals').insert({
       user_id: user.id,
       food_name: foodName,

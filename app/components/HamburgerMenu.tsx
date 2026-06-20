@@ -1,15 +1,24 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
 
 type Props = {
   isPremium: boolean
+  onManageSubscription?: () => void
 }
 
-export default function HamburgerMenu({ isPremium }: Props) {
+export default function HamburgerMenu({ isPremium, onManageSubscription }: Props) {
   const [isOpen, setIsOpen] = useState(false)
+  const [pushEnabled, setPushEnabled] = useState(false)
+  const [pushLoading, setPushLoading] = useState(false)
   const router = useRouter()
+
+  useEffect(() => {
+    if ('Notification' in window) {
+      setPushEnabled(Notification.permission === 'granted')
+    }
+  }, [])
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -19,6 +28,43 @@ export default function HamburgerMenu({ isPremium }: Props) {
   const handleNavigate = (path: string) => {
     setIsOpen(false)
     router.push(path)
+  }
+
+  const handlePushToggle = async () => {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
+    setPushLoading(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+
+      if (pushEnabled) {
+        await fetch('/api/push/subscribe', {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        })
+        setPushEnabled(false)
+      } else {
+        const permission = await Notification.requestPermission()
+        if (permission !== 'granted') return
+
+        const reg = await navigator.serviceWorker.ready
+        const sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+        })
+        await fetch('/api/push/subscribe', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ subscription: sub.toJSON() }),
+        })
+        setPushEnabled(true)
+      }
+    } finally {
+      setPushLoading(false)
+    }
   }
 
   return (
@@ -113,13 +159,25 @@ export default function HamburgerMenu({ isPremium }: Props) {
           )}
 
           {isPremium ? (
-            <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[#E4ECDF]">
-              <span className="text-xl">🌟</span>
-              <div>
-                <div className="text-sm font-medium text-[#7A9471]">プレミアム利用中</div>
-                <div className="text-xs text-[#7A9471] opacity-80">AI機能が使い放題です</div>
+            <>
+              <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[#E4ECDF]">
+                <span className="text-xl">🌟</span>
+                <div className="flex-1">
+                  <div className="text-sm font-medium text-[#7A9471]">プレミアム利用中</div>
+                  <div className="text-xs text-[#7A9471] opacity-80">AI機能が使い放題です</div>
+                </div>
               </div>
-            </div>
+              {onManageSubscription && (
+                <button onClick={() => { setIsOpen(false); onManageSubscription() }}
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#F8F4ED] transition-colors text-left w-full">
+                  <span className="text-xl">⚙️</span>
+                  <div>
+                    <div className="text-sm font-medium text-[#2C2A26]">サブスクリプション管理</div>
+                    <div className="text-xs text-[#8A8377]">プラン変更・解約はこちら</div>
+                  </div>
+                </button>
+              )}
+            </>
           ) : (
             <button onClick={() => handleNavigate('/')}
               className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[#FCEEE5] hover:bg-[#F5D5C5] transition-colors text-left w-full">
@@ -127,6 +185,23 @@ export default function HamburgerMenu({ isPremium }: Props) {
               <div>
                 <div className="text-sm font-medium text-[#E8835A]">プレミアムにアップグレード</div>
                 <div className="text-xs text-[#E8835A] opacity-80">¥300 / 月</div>
+              </div>
+            </button>
+          )}
+
+          {/* Push通知 */}
+          {'Notification' in (typeof window !== 'undefined' ? window : {}) && (
+            <button onClick={handlePushToggle} disabled={pushLoading}
+              className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#F8F4ED] transition-colors text-left w-full disabled:opacity-50">
+              <span className="text-xl">{pushEnabled ? '🔔' : '🔕'}</span>
+              <div>
+                <div className="text-sm font-medium text-[#2C2A26]">
+                  {pushEnabled ? 'リマインダーON' : 'リマインダーOFF'}
+                </div>
+                <div className="text-xs text-[#8A8377]">毎日20時に記録を促す通知</div>
+              </div>
+              <div className={`ml-auto w-9 h-5 rounded-full transition-colors flex items-center ${pushEnabled ? 'bg-[#7A9471]' : 'bg-[#DDD6C8]'}`}>
+                <div className={`w-4 h-4 rounded-full bg-white shadow-sm mx-0.5 transition-transform ${pushEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
               </div>
             </button>
           )}

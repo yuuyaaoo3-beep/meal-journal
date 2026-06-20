@@ -19,16 +19,21 @@ export default function Home() {
   const [selectedProtein, setSelectedProtein] = useState<string[]>([])
   const [selectedChain, setSelectedChain] = useState<string | null>(null)
   const [selectedGenre, setSelectedGenre] = useState<string | null>(null)
+  const [streak, setStreak] = useState(0)
+  const [pricingPlan, setPricingPlan] = useState<'monthly' | 'annual'>('monthly')
+  const [portalLoading, setPortalLoading] = useState(false)
 
   useEffect(() => {
     const load = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { window.location.href = '/login'; return }
       const today = new Date().toISOString().split('T')[0]
-      const [goalRes, recordsRes, weightRes] = await Promise.all([
+      const since60 = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      const [goalRes, recordsRes, weightRes, streakRes] = await Promise.all([
         supabase.from('user_goals').select('*').eq('user_id', user.id).single(),
         supabase.from('meal_records').select('*').eq('user_id', user.id).eq('recorded_at', today),
         supabase.from('weight_records').select('*').eq('user_id', user.id).eq('recorded_at', today).single(),
+        supabase.from('meal_records').select('recorded_at').eq('user_id', user.id).gte('recorded_at', since60),
       ])
       if (goalRes.data) {
         setGoal(goalRes.data)
@@ -36,6 +41,20 @@ export default function Home() {
       }
       if (recordsRes.data) setTodayRecords(recordsRes.data)
       if (weightRes.data) setTodayWeight(weightRes.data.weight)
+
+      // ストリーク計算
+      if (streakRes.data) {
+        const dates = [...new Set(streakRes.data.map(r => r.recorded_at))].sort().reverse()
+        let count = 0; let check = today
+        for (const d of dates) {
+          if (d === check) {
+            count++
+            const dt = new Date(check + 'T00:00:00'); dt.setDate(dt.getDate() - 1)
+            check = dt.toISOString().split('T')[0]
+          } else if (d < check) break
+        }
+        setStreak(count)
+      }
       setLoading(false)
     }
     load()
@@ -117,6 +136,43 @@ export default function Home() {
     }
   }
 
+  const handleShare = async () => {
+    const text = `今日の食事記録 ${dateStr}\n📊 ${total.calories}kcal (P:${Math.round(total.protein)}g / F:${Math.round(total.fat)}g / C:${Math.round(total.carbs)}g)\n#MealJournal #ダイエット #食事管理`
+    if (navigator.share) {
+      await navigator.share({ text }).catch(() => {})
+    } else {
+      await navigator.clipboard.writeText(text).catch(() => {})
+    }
+  }
+
+  const handleCheckout = async (plan: 'monthly' | 'annual') => {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return
+    const res = await fetch('/api/create-checkout-session', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ plan }),
+    })
+    const { url } = await res.json()
+    if (url) window.location.href = url
+  }
+
+  const handleCustomerPortal = async () => {
+    setPortalLoading(true)
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) { setPortalLoading(false); return }
+    const res = await fetch('/api/customer-portal', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    })
+    const data = await res.json()
+    if (data.url) window.location.href = data.url
+    setPortalLoading(false)
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#F8F4ED] flex items-center justify-center">
@@ -130,13 +186,20 @@ export default function Home() {
       <div className="max-w-md mx-auto px-4 pt-8">
 
         <div className="mb-5 flex items-start justify-between">
-  <div>
-    <p className="text-[#E8835A] font-medium text-sm mb-1">{dateStr}</p>
-    <h1 className="text-2xl font-bold text-[#2C2A26]">こんにちは 👋</h1>
-    <p className="text-sm text-[#8A8377]">今日も小さな一歩を、楽しく。</p>
-  </div>
-  <HamburgerMenu isPremium={isPremium} />
-</div>
+          <div>
+            <p className="text-[#E8835A] font-medium text-sm mb-1">{dateStr}</p>
+            <h1 className="text-2xl font-bold text-[#2C2A26]">こんにちは 👋</h1>
+            <div className="flex items-center gap-2 mt-1">
+              <p className="text-sm text-[#8A8377]">今日も小さな一歩を、楽しく。</p>
+              {streak >= 2 && (
+                <span className="inline-flex items-center gap-0.5 px-2 py-0.5 bg-[#FCEEE5] rounded-full border border-[#F5B89D] text-xs font-semibold text-[#E8835A]">
+                  🔥 {streak}日連続
+                </span>
+              )}
+            </div>
+          </div>
+          <HamburgerMenu isPremium={isPremium} onManageSubscription={handleCustomerPortal} />
+        </div>
 
         <div className="bg-gradient-to-br from-[#E4ECDF] to-[#F8F4ED] rounded-2xl p-5 mb-4 border border-[#DDD6C8]">
           <div className="flex items-center gap-5">
@@ -170,6 +233,17 @@ export default function Home() {
               </div>
             </div>
           </div>
+        </div>
+
+        <div className="flex justify-end mb-2">
+          <button onClick={handleShare}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-full border border-[#DDD6C8] text-xs text-[#8A8377] hover:border-[#7A9471] hover:text-[#7A9471] transition-colors">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+            </svg>
+            今日の記録をシェア
+          </button>
         </div>
 
         <div className="bg-white rounded-2xl p-4 border border-[#DDD6C8] mb-4">
@@ -269,27 +343,38 @@ export default function Home() {
         {!isPremium && (
           <div className="mt-4 bg-gradient-to-br from-[#FCEEE5] to-[#F8F4ED] rounded-2xl p-5 border border-[#F5B89D]">
             <p className="text-sm font-semibold text-[#2C2A26] mb-1">🌟 プレミアムにアップグレード</p>
-            <p className="text-xs text-[#5C574F] mb-4">AI献立提案・食事レポートが使い放題になります</p>
+            <p className="text-xs text-[#5C574F] mb-3">AI献立提案・食事レポートが使い放題になります</p>
+
+            {/* 月払い / 年払い トグル */}
+            <div className="flex gap-1 bg-[#F5D5C5] p-1 rounded-xl mb-3">
+              {([['monthly', '月払い'], ['annual', '年払い']] as const).map(([v, label]) => (
+                <button key={v} onClick={() => setPricingPlan(v)}
+                  className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    pricingPlan === v ? 'bg-white text-[#E8835A] shadow-sm' : 'text-[#E8835A]'
+                  }`}>
+                  {label}
+                  {v === 'annual' && <span className="ml-1 text-[10px] font-semibold text-[#7A9471]">2ヶ月お得</span>}
+                </button>
+              ))}
+            </div>
+
             <button
-              onClick={async () => {
-                const { data: { session } } = await supabase.auth.getSession()
-                if (!session) return
-                const res = await fetch('/api/create-checkout-session', {
-                  method: 'POST',
-                  headers: { Authorization: `Bearer ${session.access_token}` },
-                })
-                const { url } = await res.json()
-                if (url) window.location.href = url
-              }}
+              onClick={() => handleCheckout(pricingPlan)}
               className="w-full py-3 bg-[#E8835A] text-white rounded-xl font-medium hover:bg-[#D4724A] transition-colors">
-              ¥300 / 月 · 今すぐ始める
+              {pricingPlan === 'annual' ? '¥3,000 / 年（¥250/月）· 今すぐ始める' : '¥300 / 月 · 今すぐ始める'}
             </button>
           </div>
         )}
 
         {isPremium && (
           <div className="mt-4 bg-gradient-to-br from-[#E4ECDF] to-[#F8F4ED] rounded-2xl p-5 border border-[#DDD6C8]">
-            <p className="text-sm font-semibold text-[#7A9471] mb-1">🌟 プレミアムプラン利用中</p>
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-sm font-semibold text-[#7A9471]">🌟 プレミアムプラン利用中</p>
+              <button onClick={handleCustomerPortal} disabled={portalLoading}
+                className="text-xs text-[#8A8377] hover:text-[#5C574F] hover:underline transition-colors disabled:opacity-50">
+                {portalLoading ? '...' : 'プラン管理'}
+              </button>
+            </div>
             <p className="text-xs text-[#5C574F] mb-4">AI機能がすべて使い放題です</p>
 
             <Link href="/report"

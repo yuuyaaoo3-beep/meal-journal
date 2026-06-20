@@ -19,10 +19,15 @@ export async function POST(req: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+    const body = await req.json().catch(() => ({}))
+    const priceId = (body.plan === 'annual' && process.env.NEXT_PUBLIC_STRIPE_ANNUAL_PRICE_ID)
+      ? process.env.NEXT_PUBLIC_STRIPE_ANNUAL_PRICE_ID
+      : process.env.NEXT_PUBLIC_STRIPE_PRICE_ID!
+
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       mode: 'subscription',
-      line_items: [{ price: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID!, quantity: 1 }],
+      line_items: [{ price: priceId, quantity: 1 }],
       customer_email: user.email,
       metadata: { userId: user.id },
       success_url: `${process.env.NEXT_PUBLIC_APP_URL}/payment/success?session_id={CHECKOUT_SESSION_ID}`,

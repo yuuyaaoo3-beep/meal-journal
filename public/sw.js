@@ -13,6 +13,31 @@ self.addEventListener('activate', (event) => {
   self.clients.claim()
 })
 
+// Push通知
+self.addEventListener('push', (event) => {
+  const data = event.data?.json() ?? {}
+  event.waitUntil(
+    self.registration.showNotification(data.title || 'Meal Journal', {
+      body: data.body || '今日の食事を記録しましょう！',
+      icon: '/icons/icon-192.png',
+      badge: '/icons/icon-192.png',
+      data: { url: data.url || '/' },
+    })
+  )
+})
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  event.waitUntil(
+    clients.matchAll({ type: 'window' }).then((list) => {
+      for (const client of list) {
+        if ('focus' in client) return client.focus()
+      }
+      if (clients.openWindow) return clients.openWindow(event.notification.data?.url || '/')
+    })
+  )
+})
+
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url)
 
