@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
-import { getJSTDateString } from '../../../lib/date'
+import { getJSTDateString } from '../../../../lib/date'
 
 // Vercel Cron: 毎日20時（JST = 11:00 UTC）に実行
 // vercel.json に { "crons": [{ "path": "/api/cron/daily-reminder", "schedule": "0 11 * * *" }] } を追加
