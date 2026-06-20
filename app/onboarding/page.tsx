@@ -24,6 +24,13 @@ const steps = [
     color: '#7A9471',
     bg: '#E4ECDF',
   },
+  {
+    emoji: '📱',
+    title: 'ホーム画面に追加しよう',
+    description: 'アプリのように使えます。\nSafariの場合：画面下の 共有ボタン（□↑）→\n「ホーム画面に追加」をタップしてください。',
+    color: '#E8835A',
+    bg: '#FCEEE5',
+  },
 ]
 
 export default function Onboarding() {

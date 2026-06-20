@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     title: "Meal Journal",
   },
   icons: {
-    apple: "/icons/icon.svg",
+    apple: "/icons/icon-512.png",
   },
 };
 
