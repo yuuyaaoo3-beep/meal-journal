@@ -2,6 +2,15 @@ import { createClient } from '@supabase/supabase-js'
 import { Resend } from 'resend'
 import { NextRequest } from 'next/server'
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { accessToken, messageId, replyText } = await req.json()
@@ -53,12 +62,12 @@ export async function POST(req: NextRequest) {
   <h2 style="font-size:18px;color:#2C2A26;margin:0 0 4px;">Meal Journal サポート</h2>
   <p style="font-size:13px;color:#8A8377;margin:0 0 24px;">お問い合わせいただきありがとうございます。以下の通りご返信いたします。</p>
   <div style="background:#F8F4ED;border-radius:12px;padding:20px;margin-bottom:24px;">
-    <p style="font-size:12px;color:#8A8377;margin:0 0 8px;">カテゴリ：${msg.category}</p>
-    <div style="font-size:14px;color:#2C2A26;white-space:pre-line;line-height:1.7;">${replyText.trim()}</div>
+    <p style="font-size:12px;color:#8A8377;margin:0 0 8px;">カテゴリ：${escapeHtml(msg.category)}</p>
+    <div style="font-size:14px;color:#2C2A26;white-space:pre-line;line-height:1.7;">${escapeHtml(replyText.trim())}</div>
   </div>
   <hr style="border:none;border-top:1px solid #DDD6C8;margin:20px 0;"/>
   <p style="font-size:12px;color:#8A8377;margin:0 0 4px;">＜ご送信いただいた内容＞</p>
-  <p style="font-size:13px;color:#8A8377;white-space:pre-line;margin:0 0 20px;">${msg.message}</p>
+  <p style="font-size:13px;color:#8A8377;white-space:pre-line;margin:0 0 20px;">${escapeHtml(msg.message)}</p>
   <hr style="border:none;border-top:1px solid #DDD6C8;margin:20px 0;"/>
   <p style="font-size:12px;color:#8A8377;">返信内容はMeal JournalアプリのMenuの「お問い合わせ履歴」でもご確認いただけます。</p>
 </div>`,

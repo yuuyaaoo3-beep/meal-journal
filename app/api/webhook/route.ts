@@ -32,6 +32,12 @@ export async function POST(req: NextRequest) {
         .from('user_goals')
         .update({ is_premium: true })
         .eq('user_id', userId)
+      // subscription.deleted 時に userId を取得できるよう顧客メタデータにも保存
+      if (session.customer) {
+        await stripe.customers.update(session.customer as string, {
+          metadata: { userId },
+        })
+      }
     }
   }
 

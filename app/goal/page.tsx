@@ -90,8 +90,7 @@ export default function Goal() {
     setSaving(true)
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { alert('ログインが必要です'); setSaving(false); return }
-    await supabase.from('user_goals').delete().eq('user_id', user.id)
-    const { error } = await supabase.from('user_goals').insert({
+    const { error } = await supabase.from('user_goals').upsert({
       user_id: user.id,
       age: parseInt(age),
       height: parseFloat(height),
@@ -105,7 +104,7 @@ export default function Goal() {
       protein: result.protein,
       fat: result.fat,
       carbs: result.carbs,
-    })
+    }, { onConflict: 'user_id' })
     if (error) { alert('保存に失敗しました') } else {
       setSaved(true)
       setTimeout(() => router.push('/'), 1500)

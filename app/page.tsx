@@ -272,12 +272,11 @@ export default function Home() {
             <p className="text-xs text-[#5C574F] mb-4">AI献立提案・食事レポートが使い放題になります</p>
             <button
               onClick={async () => {
-                const { data: { user } } = await supabase.auth.getUser()
-                if (!user) return
+                const { data: { session } } = await supabase.auth.getSession()
+                if (!session) return
                 const res = await fetch('/api/create-checkout-session', {
                   method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ userId: user.id, email: user.email }),
+                  headers: { Authorization: `Bearer ${session.access_token}` },
                 })
                 const { url } = await res.json()
                 if (url) window.location.href = url

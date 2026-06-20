@@ -11,6 +11,9 @@ export async function POST(req: NextRequest) {
     if (!accessToken || !mealName?.trim()) {
       return Response.json({ error: 'Invalid request' }, { status: 400 })
     }
+    if (mealName.trim().length > 100) {
+      return Response.json({ error: 'Invalid request' }, { status: 400 })
+    }
 
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -37,10 +40,20 @@ export async function POST(req: NextRequest) {
       if (block.type === 'text') text += block.text
     }
 
-    const match = text.match(/\{[\s\S]*?\}/)
+    const match = text.match(/\{[\s\S]*\}/)
     if (!match) return Response.json({ error: '推定に失敗しました' }, { status: 500 })
 
-    return Response.json(JSON.parse(match[0]))
+    try {
+      const nutrition = JSON.parse(match[0])
+      const { calories, protein, fat, carbs, portion } = nutrition
+      if (typeof calories !== 'number' || typeof protein !== 'number' ||
+          typeof fat !== 'number' || typeof carbs !== 'number') {
+        return Response.json({ error: '推定に失敗しました' }, { status: 500 })
+      }
+      return Response.json({ calories, protein, fat, carbs, portion: portion || '' })
+    } catch {
+      return Response.json({ error: '推定に失敗しました' }, { status: 500 })
+    }
   } catch {
     return Response.json({ error: 'Internal server error' }, { status: 500 })
   }
