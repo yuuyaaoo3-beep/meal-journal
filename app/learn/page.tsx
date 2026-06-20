@@ -117,7 +117,7 @@ function Slide3() {
           <div>
             <p className="text-sm font-semibold text-[#2C2A26]">体脂肪1kgを燃やすには</p>
             <p className="text-lg font-bold text-[#E8835A]">約7,200kcal</p>
-            <p className="text-xs text-[#8A8377]">の累積赤字（消費 > 摂取）が必要</p>
+            <p className="text-xs text-[#8A8377]">の累積赤字（消費 &gt; 摂取）が必要</p>
           </div>
         </div>
         <div className="flex items-start gap-3 bg-[#F8F4ED] rounded-xl p-3.5 border border-[#DDD6C8]">
