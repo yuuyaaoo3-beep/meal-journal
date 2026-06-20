@@ -400,12 +400,6 @@ export default function Record() {
                     {r.calories}kcal · P{r.protein}g · F{r.fat}g · C{r.carbs}g
                   </div>
                 </div>
-                {isPremium && (
-                  <Link href={`/feedback/${r.id}`}
-                    className="flex-shrink-0 px-2.5 py-1.5 bg-[#E4ECDF] text-[#7A9471] rounded-lg text-xs font-medium hover:bg-[#D5E3D0] transition-colors">
-                    🤖 評価
-                  </Link>
-                )}
                 {!isInMyLibrary(r.food_name) && (
                   <button onClick={() => saveToMyMealsFromRecord(r)}
                     title="マイミールに保存"
