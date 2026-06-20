@@ -12,6 +12,8 @@ export default function HamburgerMenu({ isPremium, onManageSubscription }: Props
   const [isOpen, setIsOpen] = useState(false)
   const [pushEnabled, setPushEnabled] = useState(false)
   const [pushLoading, setPushLoading] = useState(false)
+  const [deleteStep, setDeleteStep] = useState<'idle' | 'confirm' | 'deleting'>('idle')
+  const [deleteInput, setDeleteInput] = useState('')
   const router = useRouter()
 
   useEffect(() => {
@@ -28,6 +30,22 @@ export default function HamburgerMenu({ isPremium, onManageSubscription }: Props
   const handleNavigate = (path: string) => {
     setIsOpen(false)
     router.push(path)
+  }
+
+  const handleDeleteAccount = async () => {
+    setDeleteStep('deleting')
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) { setDeleteStep('confirm'); return }
+    const res = await fetch('/api/account/delete', {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    })
+    if (res.ok) {
+      await supabase.auth.signOut()
+      window.location.href = '/login'
+    } else {
+      setDeleteStep('confirm')
+    }
   }
 
   const handlePushToggle = async () => {
@@ -240,6 +258,41 @@ export default function HamburgerMenu({ isPremium, onManageSubscription }: Props
             <button onClick={() => handleNavigate('/privacy')}
               className="text-xs text-[#8A8377] hover:underline">プライバシーポリシー</button>
           </div>
+
+          {deleteStep === 'idle' && (
+            <button onClick={() => setDeleteStep('confirm')}
+              className="mt-3 px-4 text-xs text-[#DDD6C8] hover:text-red-400 transition-colors">
+              アカウントを削除
+            </button>
+          )}
+
+          {(deleteStep === 'confirm' || deleteStep === 'deleting') && (
+            <div className="mt-3 px-4">
+              <p className="text-xs text-red-500 font-medium mb-1">⚠️ この操作は取り消せません</p>
+              <p className="text-xs text-[#8A8377] mb-2">すべての記録・設定が削除されます。確認のため「削除」と入力してください。</p>
+              <input
+                type="text"
+                value={deleteInput}
+                onChange={(e) => setDeleteInput(e.target.value)}
+                placeholder="削除"
+                className="w-full px-3 py-2 text-sm rounded-lg border border-red-200 bg-red-50 text-[#2C2A26] focus:outline-none focus:border-red-400 mb-2"
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={handleDeleteAccount}
+                  disabled={deleteInput !== '削除' || deleteStep === 'deleting'}
+                  className="flex-1 py-2 bg-red-500 text-white rounded-lg text-xs font-medium hover:bg-red-600 transition-colors disabled:opacity-40">
+                  {deleteStep === 'deleting' ? '削除中...' : 'アカウントを削除する'}
+                </button>
+                <button
+                  onClick={() => { setDeleteStep('idle'); setDeleteInput('') }}
+                  disabled={deleteStep === 'deleting'}
+                  className="px-3 py-2 bg-[#F8F4ED] text-[#8A8377] rounded-lg text-xs border border-[#DDD6C8] hover:border-[#7A9471] transition-colors">
+                  キャンセル
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
       </div>

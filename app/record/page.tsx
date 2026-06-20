@@ -53,6 +53,7 @@ export default function Record() {
   const [aiError, setAiError] = useState<string | null>(null)
   const [savedToMyMeal, setSavedToMyMeal] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
+  const [editingRecord, setEditingRecord] = useState<{ id: string; food_name: string; calories: number; protein: number; fat: number; carbs: number } | null>(null)
 
   useEffect(() => {
     loadRecords()
@@ -182,25 +183,59 @@ export default function Record() {
     setSaving(true)
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { setFormError('ログインが必要です'); setSaving(false); return }
-    const { error } = await supabase.from('meal_records').insert({
-      user_id: user.id,
-      meal_type: activeTab,
-      food_name: foodName,
-      calories: parseInt(calories) || 0,
-      protein: parseFloat(protein) || 0,
-      fat: parseFloat(fat) || 0,
-      carbs: parseFloat(carbs) || 0,
-      recorded_at: selectedDate,
-    })
+
+    let error
+    if (editingRecord) {
+      ;({ error } = await supabase.from('meal_records').update({
+        food_name: foodName,
+        calories: parseInt(calories) || 0,
+        protein: parseFloat(protein) || 0,
+        fat: parseFloat(fat) || 0,
+        carbs: parseFloat(carbs) || 0,
+      }).eq('id', editingRecord.id))
+    } else {
+      ;({ error } = await supabase.from('meal_records').insert({
+        user_id: user.id,
+        meal_type: activeTab,
+        food_name: foodName,
+        calories: parseInt(calories) || 0,
+        protein: parseFloat(protein) || 0,
+        fat: parseFloat(fat) || 0,
+        carbs: parseFloat(carbs) || 0,
+        recorded_at: selectedDate,
+      }))
+    }
+
     if (error) {
       setFormError('保存に失敗しました')
     } else {
       setFoodName(''); setCalories(''); setProtein(''); setFat(''); setCarbs('')
       setInputMode('none'); setShowMyMeals(false); setSelectedMyMealIds([])
-      setFormError(null)
+      setFormError(null); setEditingRecord(null)
       loadRecords()
     }
     setSaving(false)
+  }
+
+  const startEditRecord = (record: any) => {
+    setEditingRecord(record)
+    setFoodName(record.food_name)
+    setCalories(String(record.calories))
+    setProtein(String(record.protein))
+    setFat(String(record.fat))
+    setCarbs(String(record.carbs))
+    setActiveTab(record.meal_type)
+    setInputMode('manual')
+    setShowMyMeals(false)
+    setFormError(null)
+    window.scrollTo({ top: 400, behavior: 'smooth' })
+  }
+
+  const cancelEditRecord = () => {
+    setEditingRecord(null)
+    setFoodName(''); setCalories(''); setProtein(''); setFat(''); setCarbs('')
+    setInputMode('none')
+    setFormError(null)
   }
 
   const saveRecordWithData = async (data: {
@@ -401,27 +436,43 @@ export default function Record() {
         {/* 記録済みリスト */}
         {records.filter(r => r.meal_type === activeTab).length > 0 && (
           <div className="mb-4">
-            {records.filter(r => r.meal_type === activeTab).map((r) => (
-              <div key={r.id} className="bg-white rounded-xl p-3 border border-[#DDD6C8] mb-2 flex items-center gap-2">
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-[#2C2A26] truncate">{r.food_name}</div>
-                  <div className="text-xs text-[#8A8377]">
-                    {r.calories}kcal · P{r.protein}g · F{r.fat}g · C{r.carbs}g
+            {records.filter(r => r.meal_type === activeTab).map((r) => {
+              const isEditing = editingRecord?.id === r.id
+              return (
+                <div key={r.id} className={`rounded-xl p-3 border mb-2 flex items-center gap-2 transition-colors ${
+                  isEditing ? 'bg-[#E4ECDF] border-[#7A9471]' : 'bg-white border-[#DDD6C8]'
+                }`}>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-[#2C2A26] truncate">{r.food_name}</div>
+                    <div className="text-xs text-[#8A8377]">
+                      {r.calories}kcal · P{r.protein}g · F{r.fat}g · C{r.carbs}g
+                    </div>
                   </div>
+                  {!isEditing && !isInMyLibrary(r.food_name) && (
+                    <button onClick={() => saveToMyMealsFromRecord(r)}
+                      title="マイミールに保存"
+                      className="flex-shrink-0 px-2.5 py-1.5 bg-[#FCEEE5] text-[#E8835A] rounded-lg text-xs font-medium hover:bg-[#F5D5C5] transition-colors">
+                      ⭐
+                    </button>
+                  )}
+                  {isEditing ? (
+                    <span className="flex-shrink-0 text-xs text-[#7A9471] font-medium px-1">編集中</span>
+                  ) : (
+                    <button onClick={() => startEditRecord(r)}
+                      title="編集"
+                      className="flex-shrink-0 text-[#DDD6C8] hover:text-[#7A9471] transition-colors px-1 text-sm">
+                      ✏️
+                    </button>
+                  )}
+                  {!isEditing && (
+                    <button onClick={() => deleteRecord(r.id)}
+                      className="flex-shrink-0 text-[#DDD6C8] hover:text-[#E8835A] text-xl transition-colors">
+                      ×
+                    </button>
+                  )}
                 </div>
-                {!isInMyLibrary(r.food_name) && (
-                  <button onClick={() => saveToMyMealsFromRecord(r)}
-                    title="マイミールに保存"
-                    className="flex-shrink-0 px-2.5 py-1.5 bg-[#FCEEE5] text-[#E8835A] rounded-lg text-xs font-medium hover:bg-[#F5D5C5] transition-colors">
-                    ⭐
-                  </button>
-                )}
-                <button onClick={() => deleteRecord(r.id)}
-                  className="flex-shrink-0 text-[#DDD6C8] hover:text-[#E8835A] text-xl transition-colors">
-                  ×
-                </button>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
 
@@ -617,6 +668,11 @@ export default function Record() {
           {/* 手入力 or マイミール選択後フォーム */}
           {(inputMode === 'manual' || inputMode === 'mymeal') && (
             <>
+              {editingRecord && (
+                <div className="mb-3 px-3 py-2 bg-[#E4ECDF] rounded-xl border border-[#C5D9BF]">
+                  <p className="text-xs text-[#7A9471] font-medium">✏️ 記録を編集中</p>
+                </div>
+              )}
               <div className="mb-3">
                 <label className="block text-sm text-[#5C574F] mb-1">食べたもの</label>
                 <input type="text" value={foodName} onChange={(e) => setFoodName(e.target.value)}
@@ -641,9 +697,14 @@ export default function Record() {
               <div className="flex gap-2">
                 <button onClick={saveRecord} disabled={saving}
                   className="flex-1 py-3 bg-[#7A9471] text-white rounded-xl font-medium hover:bg-[#6A8462] transition-colors disabled:opacity-50">
-                  {saving ? '保存中...' : '記録する'}
+                  {saving ? '保存中...' : editingRecord ? '更新する' : '記録する'}
                 </button>
-                {inputMode === 'manual' && (
+                {editingRecord ? (
+                  <button onClick={cancelEditRecord}
+                    className="px-4 py-3 bg-[#F8F4ED] text-[#8A8377] rounded-xl font-medium border border-[#DDD6C8] hover:border-[#7A9471] transition-colors text-sm whitespace-nowrap">
+                    キャンセル
+                  </button>
+                ) : inputMode === 'manual' && (
                   <button onClick={saveToMyMeals}
                     className="px-4 py-3 bg-[#FCEEE5] text-[#E8835A] rounded-xl font-medium hover:bg-[#F5D5C5] transition-colors text-sm whitespace-nowrap">
                     ⭐ 保存
