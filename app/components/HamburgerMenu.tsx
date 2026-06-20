@@ -32,7 +32,7 @@ export default function HamburgerMenu({ isPremium }: Props) {
         <span className="w-5 h-0.5 bg-[#5C574F] rounded-full"></span>
       </button>
 
-      {/* オーバーレイ（半透明・薄め） */}
+      {/* オーバーレイ */}
       {isOpen && (
         <div
           className="fixed inset-0 z-40"
@@ -45,7 +45,8 @@ export default function HamburgerMenu({ isPremium }: Props) {
       <div className={`fixed top-0 left-0 h-full w-72 bg-[#FFFCF6] z-50 shadow-xl transform transition-transform duration-300 ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
-        {/* メニューヘッダー */}
+
+        {/* ヘッダー */}
         <div className="flex items-center justify-between px-6 pt-12 pb-6 border-b border-[#DDD6C8]">
           <div>
             <div className="font-bold text-lg text-[#2C2A26]" style={{ fontFamily: 'serif' }}>Meal Journal</div>
@@ -63,7 +64,7 @@ export default function HamburgerMenu({ isPremium }: Props) {
         </div>
 
         {/* メニュー項目 */}
-        <div className="px-4 py-6 flex flex-col gap-2">
+        <div className="px-4 py-4 flex flex-col gap-1 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 200px)' }}>
           <button onClick={() => handleNavigate('/goal')}
             className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#F8F4ED] transition-colors text-left w-full">
             <span className="text-xl">👤</span>
@@ -81,6 +82,7 @@ export default function HamburgerMenu({ isPremium }: Props) {
               <div className="text-xs text-[#8A8377]">PFC・代謝・停滞期について</div>
             </div>
           </button>
+
           <button onClick={() => handleNavigate('/my-meals')}
             className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#F8F4ED] transition-colors text-left w-full">
             <span className="text-xl">⭐</span>
@@ -128,6 +130,26 @@ export default function HamburgerMenu({ isPremium }: Props) {
               </div>
             </button>
           )}
+
+          {/* お問い合わせ */}
+          <div className="border-t border-[#EFE8DA] mt-1 pt-1">
+            <button onClick={() => handleNavigate('/contact')}
+              className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#F8F4ED] transition-colors text-left w-full">
+              <span className="text-xl">✉️</span>
+              <div>
+                <div className="text-sm font-medium text-[#2C2A26]">お問い合わせ</div>
+                <div className="text-xs text-[#8A8377]">ご意見・要望・バグ報告はこちら</div>
+              </div>
+            </button>
+            <button onClick={() => handleNavigate('/contact/history')}
+              className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#F8F4ED] transition-colors text-left w-full">
+              <span className="text-xl">📬</span>
+              <div>
+                <div className="text-sm font-medium text-[#2C2A26]">お問い合わせ履歴</div>
+                <div className="text-xs text-[#8A8377]">返信を確認する</div>
+              </div>
+            </button>
+          </div>
         </div>
 
         {/* ログアウト・法的リンク - 下部固定 */}
@@ -144,6 +166,7 @@ export default function HamburgerMenu({ isPremium }: Props) {
               className="text-xs text-[#8A8377] hover:underline">プライバシーポリシー</button>
           </div>
         </div>
+
       </div>
     </>
   )
