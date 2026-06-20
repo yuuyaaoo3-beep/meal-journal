@@ -12,12 +12,14 @@ export default function HamburgerMenu({ isPremium, onManageSubscription }: Props
   const [isOpen, setIsOpen] = useState(false)
   const [pushEnabled, setPushEnabled] = useState(false)
   const [pushLoading, setPushLoading] = useState(false)
+  const [pushSupported, setPushSupported] = useState(false)
   const [deleteStep, setDeleteStep] = useState<'idle' | 'confirm' | 'deleting'>('idle')
   const [deleteInput, setDeleteInput] = useState('')
   const router = useRouter()
 
   useEffect(() => {
-    if ('Notification' in window) {
+    if ('Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window) {
+      setPushSupported(true)
       setPushEnabled(Notification.permission === 'granted')
     }
   }, [])
@@ -208,7 +210,7 @@ export default function HamburgerMenu({ isPremium, onManageSubscription }: Props
           )}
 
           {/* Push通知 */}
-          {'Notification' in (typeof window !== 'undefined' ? window : {}) && (
+          {pushSupported && (
             <button onClick={handlePushToggle} disabled={pushLoading}
               className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#F8F4ED] transition-colors text-left w-full disabled:opacity-50">
               <span className="text-xl">{pushEnabled ? '🔔' : '🔕'}</span>
@@ -245,7 +247,7 @@ export default function HamburgerMenu({ isPremium, onManageSubscription }: Props
           </div>
 
           {/* ログアウト・法的リンク・アカウント削除 */}
-          <div className="border-t border-[#EFE8DA] mt-1 pt-1 pb-6">
+          <div className="border-t border-[#EFE8DA] mt-1 pt-1 pb-24">
             <button onClick={handleLogout}
               className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#F8F4ED] transition-colors text-left w-full">
               <span className="text-xl">🚪</span>
