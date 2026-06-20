@@ -283,7 +283,7 @@ export default function Home() {
                 if (url) window.location.href = url
               }}
               className="w-full py-3 bg-[#E8835A] text-white rounded-xl font-medium hover:bg-[#D4724A] transition-colors">
-              ¥980 / 月 · 今すぐ始める
+              ¥300 / 月 · 今すぐ始める
             </button>
           </div>
         )}

@@ -126,7 +126,7 @@ export default function HamburgerMenu({ isPremium }: Props) {
               <span className="text-xl">🌟</span>
               <div>
                 <div className="text-sm font-medium text-[#E8835A]">プレミアムにアップグレード</div>
-                <div className="text-xs text-[#E8835A] opacity-80">¥980 / 月</div>
+                <div className="text-xs text-[#E8835A] opacity-80">¥300 / 月</div>
               </div>
             </button>
           )}

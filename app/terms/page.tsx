@@ -23,7 +23,7 @@ export default function Terms() {
             <p>本サービスは、食事記録・体重管理・AI献立提案・週次レポートなどの機能を提供するダイエット支援アプリです。</p>
             <ul className="mt-2 space-y-1 list-disc list-inside text-[#5C574F]">
               <li>無料プラン：食事記録・体重記録・基本機能</li>
-              <li>プレミアムプラン（¥980/月）：AI献立提案・週次AIレポート</li>
+              <li>プレミアムプラン（¥300/月）：AI献立提案・週次AIレポート</li>
             </ul>
           </section>
 
@@ -36,7 +36,7 @@ export default function Terms() {
             <h2 className="font-semibold text-base mb-3">4. 料金・お支払い</h2>
             <p>プレミアムプランの料金は以下の通りです。</p>
             <ul className="mt-2 space-y-1 list-disc list-inside text-[#5C574F]">
-              <li>月額：¥980（税込）</li>
+              <li>月額：¥300（税込）</li>
               <li>支払方法：クレジットカード（Stripe社を通じて処理）</li>
               <li>請求サイクル：毎月自動更新</li>
               <li>返金：原則として返金は行いませんが、ご事情によってはご相談ください</li>
