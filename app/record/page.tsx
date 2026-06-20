@@ -304,6 +304,24 @@ export default function Record() {
     loadMyMeals()
   }
 
+  const saveToMyMealsFromRecord = async (record: any) => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const { error } = await supabase.from('my_meals').insert({
+      user_id: user.id,
+      food_name: record.food_name,
+      calories: record.calories,
+      protein: record.protein,
+      fat: record.fat,
+      carbs: record.carbs,
+    })
+    if (!error) loadMyMeals()
+  }
+
+  const isInMyLibrary = (foodName: string) =>
+    myMeals.some(m => m.food_name === foodName) ||
+    myDishes.some(d => d.dish_name === foodName)
+
   const resetAiMode = () => {
     setAiMealName(''); setAiSaved(false); setAiPortion(''); setAiError(null); setSavedToMyMeal(false)
   }
@@ -387,6 +405,13 @@ export default function Record() {
                     className="flex-shrink-0 px-2.5 py-1.5 bg-[#E4ECDF] text-[#7A9471] rounded-lg text-xs font-medium hover:bg-[#D5E3D0] transition-colors">
                     🤖 評価
                   </Link>
+                )}
+                {!isInMyLibrary(r.food_name) && (
+                  <button onClick={() => saveToMyMealsFromRecord(r)}
+                    title="マイミールに保存"
+                    className="flex-shrink-0 px-2.5 py-1.5 bg-[#FCEEE5] text-[#E8835A] rounded-lg text-xs font-medium hover:bg-[#F5D5C5] transition-colors">
+                    ⭐
+                  </button>
                 )}
                 <button onClick={() => deleteRecord(r.id)}
                   className="flex-shrink-0 text-[#DDD6C8] hover:text-[#E8835A] text-xl transition-colors">
