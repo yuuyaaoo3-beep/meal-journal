@@ -15,7 +15,7 @@ export default function Terms() {
 
           <section>
             <h2 className="font-semibold text-base mb-3">1. はじめに</h2>
-            <p>本利用規約（以下「本規約」）は、大崎 祐弥（以下「当社」）が提供するサービス「Meal Journal」（以下「本サービス」）の利用条件を定めるものです。ユーザーの皆様には本規約に同意いただいた上でご利用いただきます。</p>
+            <p>本利用規約（以下「本規約」）は、Meal Journal 運営者（以下「当社」）が提供するサービス「Meal Journal」（以下「本サービス」）の利用条件を定めるものです。ユーザーの皆様には本規約に同意いただいた上でご利用いただきます。</p>
           </section>
 
           <section>
@@ -45,7 +45,7 @@ export default function Terms() {
 
           <section>
             <h2 className="font-semibold text-base mb-3">5. 解約・キャンセル</h2>
-            <p>プレミアムプランはいつでも解約できます。解約後は次回請求日以降、プレミアム機能が停止します。解約のお申し出は yuuyaaoo3@gmail.com までご連絡ください。</p>
+            <p>プレミアムプランはいつでも解約できます。解約後は次回請求日以降、プレミアム機能が停止します。解約のお申し出は下記お問い合わせ窓口までご連絡ください。</p>
           </section>
 
           <section>
@@ -78,8 +78,7 @@ export default function Terms() {
 
           <section>
             <h2 className="font-semibold text-base mb-3">10. お問い合わせ</h2>
-            <p>本規約に関するご質問は以下までご連絡ください。</p>
-            <p className="mt-2 text-[#5C574F]">メール：yuuyaaoo3@gmail.com</p>
+            <p>本規約に関するご質問は、アプリ内のハンバーガーメニューよりお問い合わせください。</p>
           </section>
 
         </div>

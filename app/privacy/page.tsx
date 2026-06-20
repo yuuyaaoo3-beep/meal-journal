@@ -15,11 +15,7 @@ export default function PrivacyPolicy() {
 
           <section>
             <h2 className="font-semibold text-base mb-3">1. 事業者情報</h2>
-            <p>本サービス「Meal Journal」は、以下の者が運営します。</p>
-            <ul className="mt-2 space-y-1 text-[#5C574F]">
-              <li>事業者名：大崎 祐弥</li>
-              <li>メールアドレス：yuuyaaoo3@gmail.com</li>
-            </ul>
+            <p>本サービス「Meal Journal」は、Meal Journal 運営者が運営します。お問い合わせはアプリ内のハンバーガーメニューよりお願いします。</p>
           </section>
 
           <section>
@@ -85,8 +81,7 @@ export default function PrivacyPolicy() {
 
           <section>
             <h2 className="font-semibold text-base mb-3">9. お問い合わせ</h2>
-            <p>プライバシーに関するご質問・ご要望は以下までご連絡ください。</p>
-            <p className="mt-2 text-[#5C574F]">メール：yuuyaaoo3@gmail.com</p>
+            <p>プライバシーに関するご質問・ご要望は、アプリ内のハンバーガーメニューよりお問い合わせください。</p>
           </section>
 
         </div>
