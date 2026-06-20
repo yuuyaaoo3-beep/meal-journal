@@ -185,15 +185,24 @@ export default function Home() {
 
   const handleCustomerPortal = async () => {
     setPortalLoading(true)
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) { setPortalLoading(false); return }
-    const res = await fetch('/api/customer-portal', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${session.access_token}` },
-    })
-    const data = await res.json()
-    if (data.url) window.location.href = data.url
-    setPortalLoading(false)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+      const res = await fetch('/api/customer-portal', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      })
+      const data = await res.json()
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        alert('サブスクリプション情報が見つかりませんでした。\nエラー: ' + (data.error ?? '不明'))
+      }
+    } catch (e: any) {
+      alert('通信エラーが発生しました: ' + e.message)
+    } finally {
+      setPortalLoading(false)
+    }
   }
 
   if (loading) {

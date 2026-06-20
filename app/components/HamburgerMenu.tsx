@@ -127,7 +127,7 @@ export default function HamburgerMenu({ isPremium, onManageSubscription }: Props
           </button>
         </div>
 
-        {/* メニュー項目 */}
+        {/* メニュー項目（すべてスクロールエリア内） */}
         <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-1">
           <button onClick={() => handleNavigate('/goal')}
             className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#F8F4ED] transition-colors text-left w-full">
@@ -243,56 +243,56 @@ export default function HamburgerMenu({ isPremium, onManageSubscription }: Props
               </div>
             </button>
           </div>
-        </div>
 
-        {/* ログアウト・法的リンク */}
-        <div className="flex-shrink-0 border-t border-[#EFE8DA] px-4 pt-2 pb-8">
-          <button onClick={handleLogout}
-            className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#F8F4ED] transition-colors text-left w-full">
-            <span className="text-xl">🚪</span>
-            <div className="text-sm font-medium text-[#8A8377]">ログアウト</div>
-          </button>
-          <div className="flex gap-4 px-4 mt-2">
-            <button onClick={() => handleNavigate('/terms')}
-              className="text-xs text-[#8A8377] hover:underline">利用規約</button>
-            <button onClick={() => handleNavigate('/privacy')}
-              className="text-xs text-[#8A8377] hover:underline">プライバシーポリシー</button>
-          </div>
-
-          {deleteStep === 'idle' && (
-            <button onClick={() => setDeleteStep('confirm')}
-              className="mt-3 px-4 text-xs text-[#DDD6C8] hover:text-red-400 transition-colors">
-              アカウントを削除
+          {/* ログアウト・法的リンク・アカウント削除 */}
+          <div className="border-t border-[#EFE8DA] mt-1 pt-1 pb-6">
+            <button onClick={handleLogout}
+              className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#F8F4ED] transition-colors text-left w-full">
+              <span className="text-xl">🚪</span>
+              <div className="text-sm font-medium text-[#8A8377]">ログアウト</div>
             </button>
-          )}
-
-          {(deleteStep === 'confirm' || deleteStep === 'deleting') && (
-            <div className="mt-3 px-4">
-              <p className="text-xs text-red-500 font-medium mb-1">⚠️ この操作は取り消せません</p>
-              <p className="text-xs text-[#8A8377] mb-2">すべての記録・設定が削除されます。確認のため「削除」と入力してください。</p>
-              <input
-                type="text"
-                value={deleteInput}
-                onChange={(e) => setDeleteInput(e.target.value)}
-                placeholder="削除"
-                className="w-full px-3 py-2 text-sm rounded-lg border border-red-200 bg-red-50 text-[#2C2A26] focus:outline-none focus:border-red-400 mb-2"
-              />
-              <div className="flex gap-2">
-                <button
-                  onClick={handleDeleteAccount}
-                  disabled={deleteInput !== '削除' || deleteStep === 'deleting'}
-                  className="flex-1 py-2 bg-red-500 text-white rounded-lg text-xs font-medium hover:bg-red-600 transition-colors disabled:opacity-40">
-                  {deleteStep === 'deleting' ? '削除中...' : 'アカウントを削除する'}
-                </button>
-                <button
-                  onClick={() => { setDeleteStep('idle'); setDeleteInput('') }}
-                  disabled={deleteStep === 'deleting'}
-                  className="px-3 py-2 bg-[#F8F4ED] text-[#8A8377] rounded-lg text-xs border border-[#DDD6C8] hover:border-[#7A9471] transition-colors">
-                  キャンセル
-                </button>
-              </div>
+            <div className="flex gap-4 px-4 mt-1">
+              <button onClick={() => handleNavigate('/terms')}
+                className="text-xs text-[#8A8377] hover:underline">利用規約</button>
+              <button onClick={() => handleNavigate('/privacy')}
+                className="text-xs text-[#8A8377] hover:underline">プライバシーポリシー</button>
             </div>
-          )}
+
+            {deleteStep === 'idle' && (
+              <button onClick={() => setDeleteStep('confirm')}
+                className="mt-3 px-4 text-xs text-[#DDD6C8] hover:text-red-400 transition-colors">
+                アカウントを削除
+              </button>
+            )}
+
+            {(deleteStep === 'confirm' || deleteStep === 'deleting') && (
+              <div className="mt-3 px-4">
+                <p className="text-xs text-red-500 font-medium mb-1">⚠️ この操作は取り消せません</p>
+                <p className="text-xs text-[#8A8377] mb-2">すべての記録・設定が削除されます。確認のため「削除」と入力してください。</p>
+                <input
+                  type="text"
+                  value={deleteInput}
+                  onChange={(e) => setDeleteInput(e.target.value)}
+                  placeholder="削除"
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-red-200 bg-red-50 text-[#2C2A26] focus:outline-none focus:border-red-400 mb-2"
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleDeleteAccount}
+                    disabled={deleteInput !== '削除' || deleteStep === 'deleting'}
+                    className="flex-1 py-2 bg-red-500 text-white rounded-lg text-xs font-medium hover:bg-red-600 transition-colors disabled:opacity-40">
+                    {deleteStep === 'deleting' ? '削除中...' : 'アカウントを削除する'}
+                  </button>
+                  <button
+                    onClick={() => { setDeleteStep('idle'); setDeleteInput('') }}
+                    disabled={deleteStep === 'deleting'}
+                    className="px-3 py-2 bg-[#F8F4ED] text-[#8A8377] rounded-lg text-xs border border-[#DDD6C8] hover:border-[#7A9471] transition-colors">
+                    キャンセル
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
       </div>
