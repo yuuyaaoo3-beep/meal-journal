@@ -207,37 +207,38 @@ export default function Home() {
               const mealCal = mealRecords.reduce((acc, r) => acc + (r.calories || 0), 0)
               return (
                 <div key={meal.key} className="bg-white rounded-xl border border-[#DDD6C8] overflow-hidden">
-                  <Link href="/record"
-                    className="flex items-center gap-3 p-3 hover:bg-[#F8F4ED] transition-all">
-                    <div className="w-10 h-10 rounded-full bg-[#F8F4ED] flex items-center justify-center text-lg flex-shrink-0">
-                      {meal.icon}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs text-[#8A8377] mb-0.5">{meal.label}</div>
-                      {mealRecords.length === 0 && (
-                        <div className="text-sm text-[#8A8377] italic">まだ記録されていません</div>
+                  <div className="flex items-center">
+                    <Link href="/record"
+                      className="flex items-center gap-3 p-3 hover:bg-[#F8F4ED] transition-all flex-1 min-w-0">
+                      <div className="w-10 h-10 rounded-full bg-[#F8F4ED] flex items-center justify-center text-lg flex-shrink-0">
+                        {meal.icon}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs text-[#8A8377] mb-0.5">{meal.label}</div>
+                        {mealRecords.length === 0 && (
+                          <div className="text-sm text-[#8A8377] italic">まだ記録されていません</div>
+                        )}
+                        {mealRecords.length > 0 && (
+                          <div className="text-xs text-[#5C574F]">{mealRecords.length}品を記録済み</div>
+                        )}
+                      </div>
+                      {mealCal > 0 && (
+                        <div className="text-xs font-medium text-[#E8835A] flex-shrink-0">{mealCal}kcal</div>
                       )}
-                      {mealRecords.length > 0 && (
-                        <div className="text-xs text-[#5C574F]">{mealRecords.length}品を記録済み</div>
-                      )}
-                    </div>
-                    {mealCal > 0 && (
-                      <div className="text-xs font-medium text-[#E8835A] flex-shrink-0">{mealCal}kcal</div>
+                    </Link>
+                    {isPremium && mealRecords.length > 0 && (
+                      <Link href={`/feedback/meal/${meal.key}`}
+                        className="flex-shrink-0 mx-3 px-2 py-1 bg-[#E4ECDF] text-[#7A9471] rounded-lg text-xs font-medium hover:bg-[#D5E3D0] transition-colors">
+                        🤖 評価
+                      </Link>
                     )}
-                  </Link>
+                  </div>
                   {mealRecords.length > 0 && (
                     <div className="border-t border-[#EFE8DA]">
                       {mealRecords.map((r) => (
                         <div key={r.id} className="flex items-center gap-2 px-3 py-2 border-b border-[#EFE8DA] last:border-0">
                           <span className="flex-1 text-sm text-[#2C2A26] truncate">{r.food_name}</span>
                           <span className="text-xs text-[#8A8377] flex-shrink-0">{r.calories}kcal</span>
-                          {isPremium && (
-                            <Link href={`/feedback/${r.id}`}
-                              onClick={(e) => e.stopPropagation()}
-                              className="flex-shrink-0 px-2 py-1 bg-[#E4ECDF] text-[#7A9471] rounded-lg text-xs font-medium hover:bg-[#D5E3D0] transition-colors">
-                              🤖 評価
-                            </Link>
-                          )}
                         </div>
                       ))}
                     </div>
