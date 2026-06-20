@@ -106,12 +106,12 @@ export default function HamburgerMenu({ isPremium, onManageSubscription }: Props
       )}
 
       {/* メニュードロワー */}
-      <div className={`fixed top-0 left-0 h-full w-72 bg-[#FFFCF6] z-50 shadow-xl transform transition-transform duration-300 ${
+      <div className={`fixed top-0 left-0 h-full w-72 bg-[#FFFCF6] z-50 shadow-xl transform transition-transform duration-300 flex flex-col ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
 
         {/* ヘッダー */}
-        <div className="flex items-center justify-between px-6 pt-12 pb-6 border-b border-[#DDD6C8]">
+        <div className="flex-shrink-0 flex items-center justify-between px-6 pt-12 pb-6 border-b border-[#DDD6C8]">
           <div>
             <div className="font-bold text-lg text-[#2C2A26]" style={{ fontFamily: 'serif' }}>Meal Journal</div>
             {isPremium && (
@@ -128,7 +128,7 @@ export default function HamburgerMenu({ isPremium, onManageSubscription }: Props
         </div>
 
         {/* メニュー項目 */}
-        <div className="px-4 py-4 flex flex-col gap-1 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 200px)' }}>
+        <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-1">
           <button onClick={() => handleNavigate('/goal')}
             className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#F8F4ED] transition-colors text-left w-full">
             <span className="text-xl">👤</span>
@@ -245,8 +245,8 @@ export default function HamburgerMenu({ isPremium, onManageSubscription }: Props
           </div>
         </div>
 
-        {/* ログアウト・法的リンク - 下部固定 */}
-        <div className="absolute bottom-24 left-0 right-0 px-4">
+        {/* ログアウト・法的リンク */}
+        <div className="flex-shrink-0 border-t border-[#EFE8DA] px-4 pt-2 pb-8">
           <button onClick={handleLogout}
             className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-[#F8F4ED] transition-colors text-left w-full">
             <span className="text-xl">🚪</span>

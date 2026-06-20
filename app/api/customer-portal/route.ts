@@ -17,9 +17,14 @@ export async function POST(req: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-    const customers = await stripe.customers.search({
+    let customers = await stripe.customers.search({
       query: `metadata['userId']:'${user.id}'`,
     })
+    // メタデータが未設定の場合はメールで検索
+    if (!customers.data.length && user.email) {
+      const byEmail = await stripe.customers.list({ email: user.email, limit: 1 })
+      if (byEmail.data.length) customers = { ...customers, data: byEmail.data }
+    }
     if (!customers.data.length) {
       return NextResponse.json({ error: 'No subscription found' }, { status: 404 })
     }
