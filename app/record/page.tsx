@@ -10,7 +10,7 @@ const MEAL_TYPES = [
   { key: 'snack', label: '間食', icon: '🍪' },
 ]
 
-const COMMON_FOODS = [
+const FALLBACK_FOODS = [
   { name: 'ごはん(150g)', calories: 252, protein: 3.8, fat: 0.5, carbs: 55.7 },
   { name: 'ゆで卵', calories: 91, protein: 7.4, fat: 6.2, carbs: 0.2 },
   { name: '鶏胸肉(100g)', calories: 116, protein: 24.4, fat: 1.9, carbs: 0 },
@@ -42,6 +42,9 @@ export default function Record() {
   const [inputMode, setInputMode] = useState<'none' | 'manual' | 'mymeal' | 'ai'>('none')
   const [selectedMyMealIds, setSelectedMyMealIds] = useState<string[]>([])
   const [pickerTab, setPickerTab] = useState<'mymeal' | 'mydish'>('mymeal')
+  const [suggestions, setSuggestions] = useState<Array<{ name: string; calories: number; protein: number; fat: number; carbs: number }>>(FALLBACK_FOODS)
+  const [suggestionsFromHistory, setSuggestionsFromHistory] = useState(false)
+
   // AI算出モード
   const [aiMealName, setAiMealName] = useState('')
   const [aiEstimating, setAiEstimating] = useState(false)
@@ -55,6 +58,10 @@ export default function Record() {
     loadTarget()
     loadMyMeals()
   }, [selectedDate])
+
+  useEffect(() => {
+    loadSuggestions()
+  }, [activeTab, selectedDate])
 
   const loadTarget = async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -100,6 +107,42 @@ export default function Record() {
       }), { calories: 0, protein: 0, fat: 0, carbs: 0 })
       setTodayTotal(total)
     }
+  }
+
+  const loadSuggestions = async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const since = new Date()
+    since.setDate(since.getDate() - 60)
+    const sinceStr = since.toISOString().split('T')[0]
+    const todayDow = new Date(selectedDate + 'T00:00:00').getDay()
+    const { data } = await supabase
+      .from('meal_records')
+      .select('food_name, calories, protein, fat, carbs, recorded_at')
+      .eq('user_id', user.id)
+      .eq('meal_type', activeTab)
+      .gte('recorded_at', sinceStr)
+    if (!data || data.length === 0) {
+      setSuggestions(FALLBACK_FOODS)
+      setSuggestionsFromHistory(false)
+      return
+    }
+    const map: Record<string, { name: string; calories: number; protein: number; fat: number; carbs: number; score: number }> = {}
+    for (const r of data) {
+      const dow = new Date(r.recorded_at + 'T00:00:00').getDay()
+      const bonus = dow === todayDow ? 1.5 : 1.0
+      if (!map[r.food_name]) {
+        map[r.food_name] = { name: r.food_name, calories: r.calories, protein: r.protein, fat: r.fat, carbs: r.carbs, score: 0 }
+      }
+      map[r.food_name].score += bonus
+      map[r.food_name].calories = r.calories
+      map[r.food_name].protein = r.protein
+      map[r.food_name].fat = r.fat
+      map[r.food_name].carbs = r.carbs
+    }
+    const sorted = Object.values(map).sort((a, b) => b.score - a.score).slice(0, 8)
+    setSuggestions(sorted.map(({ name, calories, protein, fat, carbs }) => ({ name, calories, protein, fat, carbs })))
+    setSuggestionsFromHistory(true)
   }
 
   const selectFood = (food: any) => {
@@ -578,9 +621,14 @@ export default function Record() {
 
         {/* よく食べるもの */}
         <div>
-          <p className="text-sm font-medium text-[#5C574F] mb-2">よく食べるもの</p>
+          <div className="flex items-center gap-2 mb-2">
+            <p className="text-sm font-medium text-[#5C574F]">よく食べるもの</p>
+            {suggestionsFromHistory && (
+              <span className="text-xs text-[#8A8377] bg-[#EFE8DA] px-2 py-0.5 rounded-full">📊 過去の記録から</span>
+            )}
+          </div>
           <div className="grid grid-cols-2 gap-2">
-            {COMMON_FOODS.map((food) => (
+            {suggestions.map((food) => (
               <button key={food.name} onClick={() => selectFood(food)}
                 className="bg-white rounded-xl p-3 border border-[#DDD6C8] text-left hover:border-[#7A9471] transition-all">
                 <div className="text-xs font-medium text-[#2C2A26] mb-1">{food.name}</div>
