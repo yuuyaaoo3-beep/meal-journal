@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import Link from 'next/link'
+import { getJSTDateString } from '../../lib/date'
 
 const MEAL_TYPES = [
   { key: 'breakfast', label: '朝食', icon: '🌅' },
@@ -33,7 +34,7 @@ export default function Record() {
   const [todayTotal, setTodayTotal] = useState({ calories: 0, protein: 0, fat: 0, carbs: 0 })
   const [targetCal, setTargetCal] = useState(1750)
   const [isPremium, setIsPremium] = useState(false)
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
+  const [selectedDate, setSelectedDate] = useState(getJSTDateString())
   const [myMeals, setMyMeals] = useState<any[]>([])
   const [myDishes, setMyDishes] = useState<any[]>([])
   const [showMyMeals, setShowMyMeals] = useState(false)
@@ -386,7 +387,7 @@ export default function Record() {
           <label className="block text-xs text-[#5C574F] mb-1">記録する日付</label>
           <div className="flex">
             <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)}
-              max={new Date().toISOString().split('T')[0]}
+              max={getJSTDateString()}
               className="flex-1 min-w-0 px-3 py-2.5 rounded-xl border border-[#DDD6C8] bg-[#F8F4ED] text-[#2C2A26] focus:outline-none focus:border-[#7A9471]" />
           </div>
         </div>

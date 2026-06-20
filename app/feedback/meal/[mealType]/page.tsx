@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../../../lib/supabase'
 import { useRouter, useParams } from 'next/navigation'
+import { getJSTDateString } from '../../../../lib/date'
 
 const MEAL_ICONS: Record<string, string> = {
   breakfast: '🌅', lunch: '☀️', dinner: '🌙', snack: '🍪',
@@ -39,7 +40,7 @@ export default function MealFeedbackPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push('/login'); return }
 
-    const today = new Date().toISOString().split('T')[0]
+    const today = getJSTDateString()
     const [mealsRes, goalRes, totalRes] = await Promise.all([
       supabase.from('meal_records').select('*').eq('user_id', user.id).eq('recorded_at', today).eq('meal_type', mealType),
       supabase.from('user_goals').select('*').eq('user_id', user.id).single(),
@@ -183,7 +184,7 @@ export default function MealFeedbackPage() {
     : 'もう少し頑張りましょう'
 
   const circumference = 2 * Math.PI * 42
-  const today = new Date().toISOString().split('T')[0]
+  const today = getJSTDateString()
 
   if (loading) return (
     <div className="min-h-screen bg-[#F8F4ED] flex items-center justify-center">

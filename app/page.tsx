@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import Link from 'next/link'
 import HamburgerMenu from './components/HamburgerMenu'
+import { getJSTDateString } from '../lib/date'
 
 export default function Home() {
   const [goal, setGoal] = useState<any>(null)
@@ -27,8 +28,8 @@ export default function Home() {
     const load = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { window.location.href = '/login'; return }
-      const today = new Date().toISOString().split('T')[0]
-      const since60 = new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      const today = getJSTDateString()
+      const since60 = getJSTDateString(new Date(Date.now() - 60 * 24 * 60 * 60 * 1000))
       const [goalRes, recordsRes, weightRes, streakRes] = await Promise.all([
         supabase.from('user_goals').select('*').eq('user_id', user.id).single(),
         supabase.from('meal_records').select('*').eq('user_id', user.id).eq('recorded_at', today),

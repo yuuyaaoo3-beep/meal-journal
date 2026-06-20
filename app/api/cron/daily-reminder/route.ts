@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
+import { getJSTDateString } from '../../../lib/date'
 
 // Vercel Cron: 毎日20時（JST = 11:00 UTC）に実行
 // vercel.json に { "crons": [{ "path": "/api/cron/daily-reminder", "schedule": "0 11 * * *" }] } を追加
@@ -16,7 +17,7 @@ export async function GET(req: NextRequest) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 
-  const today = new Date().toISOString().split('T')[0]
+  const today = getJSTDateString()
 
   // 今日まだ記録していないユーザーのpush subscriptionを取得
   const { data: subs } = await adminSupabase

@@ -1,9 +1,10 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
+import { getJSTDateString } from '../../lib/date'
 
 export default function Weight() {
-  const today = new Date().toISOString().split('T')[0]
+  const today = getJSTDateString()
   const [selectedDate, setSelectedDate] = useState(today)
   const [todayWeight, setTodayWeight] = useState('')
   const [records, setRecords] = useState<any[]>([])

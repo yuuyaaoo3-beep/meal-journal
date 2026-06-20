@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest } from 'next/server'
+import { getJSTDayStart } from '../../../lib/date'
 
 const anthropic = new Anthropic()
 
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
     if (!goalData?.is_premium) return Response.json({ error: 'Premium required' }, { status: 403 })
 
     // Rate limit: 20 calls/day per user
-    const dayStart = new Date(); dayStart.setHours(0, 0, 0, 0)
+    const dayStart = getJSTDayStart()
     const { count } = await supabase.from('api_usage')
       .select('*', { count: 'exact', head: true })
       .eq('endpoint', 'meal-feedback-group')
