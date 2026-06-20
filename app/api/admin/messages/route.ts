@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
     { global: { headers: { Authorization: `Bearer ${token}` } } }
   )
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user || user.email !== process.env.ADMIN_EMAIL) {
+  if (!process.env.ADMIN_EMAIL || !user || user.email !== process.env.ADMIN_EMAIL) {
     return Response.json({ error: 'Forbidden' }, { status: 403 })
   }
 

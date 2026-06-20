@@ -15,6 +15,9 @@ export async function POST(req: NextRequest) {
     if (!accessToken || !meal || !goal) {
       return Response.json({ error: 'Invalid request' }, { status: 400 })
     }
+    if (messages !== undefined && (!Array.isArray(messages) || messages.length > 30)) {
+      return Response.json({ error: 'Invalid request' }, { status: 400 })
+    }
 
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -27,6 +30,17 @@ export async function POST(req: NextRequest) {
     const { data: goalData } = await supabase
       .from('user_goals').select('is_premium').eq('user_id', user.id).single()
     if (!goalData?.is_premium) return Response.json({ error: 'Premium required' }, { status: 403 })
+
+    // Rate limit: 20 calls/day per user
+    const dayStart = new Date(); dayStart.setHours(0, 0, 0, 0)
+    const { count } = await supabase.from('api_usage')
+      .select('*', { count: 'exact', head: true })
+      .eq('endpoint', 'meal-feedback')
+      .gte('created_at', dayStart.toISOString())
+    if ((count ?? 0) >= 20) {
+      return Response.json({ error: '本日の利用上限（20回）に達しました。明日またお試しください。' }, { status: 429 })
+    }
+    supabase.from('api_usage').insert({ endpoint: 'meal-feedback' }).then(() => {})
 
     const mealLabel = MEAL_LABELS[meal.meal_type] || meal.meal_type
     const system = `あなたは管理栄養士AIです。ユーザーの食事記録を分析し、日本語で温かく、具体的で実践的なアドバイスをします。`

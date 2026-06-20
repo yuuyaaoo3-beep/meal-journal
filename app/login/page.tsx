@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { supabase } from '../../lib/supabase'
 
-type View = 'welcome' | 'login' | 'signup'
+type View = 'welcome' | 'login' | 'signup' | 'reset'
 
 export default function Login() {
   const [view, setView] = useState<View>('welcome')
@@ -40,6 +40,17 @@ export default function Login() {
     setLoading(false)
   }
 
+  const handleReset = async () => {
+    setLoading(true)
+    setMessage('')
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/login`,
+    })
+    if (error) setMessage('送信に失敗しました。メールアドレスをご確認ください。')
+    else setMessage('パスワードリセットのメールを送信しました。メールをご確認ください。')
+    setLoading(false)
+  }
+
   const Legal = () => (
     <div className="mt-6 text-center text-xs text-[#8A8377] space-x-4">
       <a href="/terms" className="hover:underline">利用規約</a>
@@ -70,6 +81,44 @@ export default function Login() {
             </button>
           </div>
 
+          <Legal />
+        </div>
+      </div>
+    )
+  }
+
+  if (view === 'reset') {
+    return (
+      <div className="min-h-screen bg-[#F8F4ED] flex flex-col items-center justify-center px-4">
+        <div className="w-full max-w-sm">
+          <div className="text-center mb-6">
+            <h1 className="text-2xl font-bold text-[#7A9471] mb-1">パスワードをリセット</h1>
+            <p className="text-[#8A8377] text-sm">登録済みのメールアドレスを入力してください</p>
+          </div>
+          <div className="bg-white rounded-2xl p-6 border border-[#C5D9BF] shadow-sm">
+            <div className="mb-5">
+              <label className="block text-sm text-[#5C574F] mb-1">メールアドレス</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-[#C5D9BF] bg-[#E4ECDF] text-[#2C2A26] focus:outline-none"
+                placeholder="example@email.com"
+              />
+            </div>
+            {message && (
+              <p className="text-sm mb-4 text-center text-[#7A9471]">{message}</p>
+            )}
+            <button
+              onClick={handleReset}
+              disabled={loading || !email}
+              className="w-full py-3 bg-[#7A9471] text-white rounded-xl font-medium hover:bg-[#6A8462] transition-colors disabled:opacity-50">
+              {loading ? '送信中...' : 'リセットメールを送信'}
+            </button>
+          </div>
+          <button onClick={() => reset('login')} className="w-full mt-4 text-sm text-[#8A8377] hover:underline">
+            ← ログインに戻る
+          </button>
           <Legal />
         </div>
       </div>
@@ -130,15 +179,20 @@ export default function Login() {
             {loading ? '処理中...' : isSignup ? 'アカウントを作成' : 'ログイン'}
           </button>
 
-          <div className="mt-4 pt-4 border-t border-[#EFE8DA] text-center">
+          <div className="mt-4 pt-4 border-t border-[#EFE8DA] text-center space-y-2">
             {isSignup ? (
-              <button onClick={() => reset('login')} className="text-sm text-[#7A9471] hover:underline">
+              <button onClick={() => reset('login')} className="block w-full text-sm text-[#7A9471] hover:underline">
                 すでにアカウントをお持ちの方
               </button>
             ) : (
-              <button onClick={() => reset('signup')} className="text-sm text-[#E8835A] hover:underline">
-                アカウントをお持ちでない方
-              </button>
+              <>
+                <button onClick={() => reset('signup')} className="block w-full text-sm text-[#E8835A] hover:underline">
+                  アカウントをお持ちでない方
+                </button>
+                <button onClick={() => reset('reset')} className="block w-full text-sm text-[#8A8377] hover:underline">
+                  パスワードを忘れた方はこちら
+                </button>
+              </>
             )}
           </div>
         </div>

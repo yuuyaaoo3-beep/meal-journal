@@ -14,6 +14,7 @@ export default function Weight() {
   const [showAllRecords, setShowAllRecords] = useState(false)
   const [chartPeriod, setChartPeriod] = useState<'30' | '180' | 'all'>('all')
   const [clickedIdx, setClickedIdx] = useState<number | null>(null)
+  const [formError, setFormError] = useState<string | null>(null)
 
   useEffect(() => { loadRecords(); loadGoal() }, [])
 
@@ -46,18 +47,26 @@ export default function Weight() {
   }
 
   const saveWeight = async () => {
-    if (!todayWeight) { alert('体重を入力してください'); return }
+    if (!todayWeight) { setFormError('体重を入力してください'); return }
+    setFormError(null)
     setSaving(true)
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { alert('ログインが必要です'); setSaving(false); return }
-    await supabase.from('weight_records').delete().eq('user_id', user.id).eq('recorded_at', selectedDate)
-    const { error } = await supabase.from('weight_records').insert({
-      user_id: user.id,
-      weight: parseFloat(todayWeight),
-      recorded_at: selectedDate,
-    })
+    if (!user) { setFormError('ログインが必要です'); setSaving(false); return }
+    const existing = records.find(r => r.recorded_at === selectedDate)
+    let error
+    if (existing) {
+      ;({ error } = await supabase.from('weight_records')
+        .update({ weight: parseFloat(todayWeight) })
+        .eq('id', existing.id))
+    } else {
+      ;({ error } = await supabase.from('weight_records').insert({
+        user_id: user.id,
+        weight: parseFloat(todayWeight),
+        recorded_at: selectedDate,
+      }))
+    }
     if (error) {
-      alert('保存に失敗しました')
+      setFormError('保存に失敗しました')
     } else {
       setSaved(true)
       loadRecords()
@@ -179,6 +188,11 @@ export default function Weight() {
             </div>
           </div>
 
+          {formError && (
+            <div className="mb-3 px-3 py-2 bg-[#FCEEE5] rounded-xl border border-[#F5B89D]">
+              <p className="text-xs text-[#E8835A]">{formError}</p>
+            </div>
+          )}
           {saved ? (
             <div className="text-center text-sm text-[#7A9471] font-medium py-2">✓ 記録しました！</div>
           ) : (

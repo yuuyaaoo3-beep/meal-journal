@@ -52,6 +52,7 @@ export default function Record() {
   const [aiPortion, setAiPortion] = useState('')
   const [aiError, setAiError] = useState<string | null>(null)
   const [savedToMyMeal, setSavedToMyMeal] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
 
   useEffect(() => {
     loadRecords()
@@ -176,10 +177,11 @@ export default function Record() {
   }
 
   const saveRecord = async () => {
-    if (!foodName) { alert('食べたものを入力してください'); return }
+    if (!foodName) { setFormError('食べたものを入力してください'); return }
+    setFormError(null)
     setSaving(true)
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { alert('ログインが必要です'); setSaving(false); return }
+    if (!user) { setFormError('ログインが必要です'); setSaving(false); return }
     const { error } = await supabase.from('meal_records').insert({
       user_id: user.id,
       meal_type: activeTab,
@@ -191,10 +193,11 @@ export default function Record() {
       recorded_at: selectedDate,
     })
     if (error) {
-      alert('保存に失敗しました')
+      setFormError('保存に失敗しました')
     } else {
       setFoodName(''); setCalories(''); setProtein(''); setFat(''); setCarbs('')
       setInputMode('none'); setShowMyMeals(false); setSelectedMyMealIds([])
+      setFormError(null)
       loadRecords()
     }
     setSaving(false)
@@ -279,14 +282,14 @@ export default function Record() {
   }
 
   const deleteRecord = async (id: string) => {
-    await supabase.from('meal_records').delete().eq('id', id)
-    loadRecords()
+    const { error } = await supabase.from('meal_records').delete().eq('id', id)
+    if (!error) loadRecords()
   }
 
   const deleteMyMeal = async (id: string) => {
     if (!confirm('このマイミールを削除しますか？')) return
-    await supabase.from('my_meals').delete().eq('id', id)
-    loadMyMeals()
+    const { error } = await supabase.from('my_meals').delete().eq('id', id)
+    if (!error) loadMyMeals()
   }
 
   const startEditMyMeal = (meal: any) => { setEditingMeal(meal) }
@@ -423,14 +426,14 @@ export default function Record() {
           <div className="flex flex-col gap-2 mb-4">
             <div className="flex gap-2">
               <button
-                onClick={() => { setShowMyMeals(!showMyMeals); if (inputMode === 'manual' || inputMode === 'ai') setInputMode('none') }}
+                onClick={() => { setShowMyMeals(!showMyMeals); if (inputMode === 'manual' || inputMode === 'ai') setInputMode('none'); setFormError(null) }}
                 className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition-all ${
                   showMyMeals ? 'bg-[#7A9471] text-white border-[#7A9471]' : 'bg-[#F8F4ED] text-[#5C574F] border-[#DDD6C8]'
                 }`}>
                 ⭐ マイミールから選択
               </button>
               <button
-                onClick={() => { setInputMode('manual'); setShowMyMeals(false) }}
+                onClick={() => { setInputMode('manual'); setShowMyMeals(false); setFormError(null) }}
                 className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition-all ${
                   inputMode === 'manual' ? 'bg-[#E8835A] text-white border-[#E8835A]' : 'bg-[#F8F4ED] text-[#5C574F] border-[#DDD6C8]'
                 }`}>
@@ -439,7 +442,8 @@ export default function Record() {
             </div>
             <button
               onClick={() => {
-                if (!isPremium) { alert('AI算出はプレミアムプランの機能です'); return }
+                if (!isPremium) { setFormError('AI算出はプレミアムプランの機能です'); return }
+                setFormError(null)
                 setInputMode('ai'); setShowMyMeals(false); resetAiMode()
               }}
               className={`relative w-full py-2.5 rounded-xl text-sm font-medium border transition-all ${
@@ -453,6 +457,12 @@ export default function Record() {
               {!isPremium && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-base">🔒</span>}
             </button>
           </div>
+
+          {formError && (
+            <div className="mb-3 px-3 py-2 bg-[#FCEEE5] rounded-xl border border-[#F5B89D]">
+              <p className="text-xs text-[#E8835A]">{formError}</p>
+            </div>
+          )}
 
           {/* マイミール／マイディッシュ ピッカー */}
           {showMyMeals && (

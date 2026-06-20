@@ -23,6 +23,7 @@ export default function Goal() {
   const [result, setResult] = useState<Result | null>(null)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   const activityOptions = [
     { value: '1.2', label: 'ほぼ運動しない', sub: 'デスクワーク中心' },
@@ -69,9 +70,10 @@ export default function Goal() {
     const g = parseFloat(goalWeight)
     const mult = parseFloat(activity)
     if (!a || !h || !w || !g) {
-      alert('すべての項目を入力してください')
+      setErrorMsg('すべての項目を入力してください')
       return
     }
+    setErrorMsg(null)
     const bmr = gender === 'female'
       ? 447.6 + 9.2 * w + 3.1 * h - 4.3 * a
       : 88.4 + 13.4 * w + 4.8 * h - 5.7 * a
@@ -89,7 +91,7 @@ export default function Goal() {
     if (!result) return
     setSaving(true)
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { alert('ログインが必要です'); setSaving(false); return }
+    if (!user) { setErrorMsg('ログインが必要です'); setSaving(false); return }
     const { error } = await supabase.from('user_goals').upsert({
       user_id: user.id,
       age: parseInt(age),
@@ -105,7 +107,7 @@ export default function Goal() {
       fat: result.fat,
       carbs: result.carbs,
     }, { onConflict: 'user_id' })
-    if (error) { alert('保存に失敗しました') } else {
+    if (error) { setErrorMsg('保存に失敗しました') } else {
       setSaved(true)
       setTimeout(() => router.push('/'), 1500)
     }
@@ -181,6 +183,11 @@ export default function Goal() {
             </div>
           </div>
         </div>
+        {errorMsg && !result && (
+          <div className="mb-3 px-4 py-3 bg-[#FCEEE5] rounded-xl border border-[#F5B89D]">
+            <p className="text-sm text-[#E8835A]">{errorMsg}</p>
+          </div>
+        )}
         <button onClick={calculate}
           className="w-full py-4 bg-[#7A9471] text-white rounded-2xl font-semibold text-base hover:bg-[#6A8462] transition-colors shadow-sm mb-3">
           私の数字を計算する →
@@ -208,6 +215,11 @@ export default function Goal() {
                 </div>
               ))}
             </div>
+            {errorMsg && (
+              <div className="mb-3 px-3 py-2 bg-white/50 rounded-xl border border-[#F5B89D]">
+                <p className="text-xs text-[#E8835A]">{errorMsg}</p>
+              </div>
+            )}
             {saved ? (
               <div className="text-center text-sm text-[#7A9471] font-medium py-2">✓ 保存しました！</div>
             ) : (

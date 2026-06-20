@@ -27,6 +27,17 @@ export async function POST(req: NextRequest) {
       .from('user_goals').select('is_premium').eq('user_id', user.id).single()
     if (!goal?.is_premium) return Response.json({ error: 'Premium required' }, { status: 403 })
 
+    // Rate limit: 20 calls/day per user
+    const dayStart = new Date(); dayStart.setHours(0, 0, 0, 0)
+    const { count } = await supabase.from('api_usage')
+      .select('*', { count: 'exact', head: true })
+      .eq('endpoint', 'nutrition-estimate')
+      .gte('created_at', dayStart.toISOString())
+    if ((count ?? 0) >= 20) {
+      return Response.json({ error: '本日のAI推定の利用上限（20回）に達しました。明日またお試しください。' }, { status: 429 })
+    }
+    supabase.from('api_usage').insert({ endpoint: 'nutrition-estimate' }).then(() => {})
+
     const msg = await anthropic.messages.create({
       model: 'claude-opus-4-8',
       max_tokens: 256,

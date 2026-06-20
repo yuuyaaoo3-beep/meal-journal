@@ -15,6 +15,12 @@ export async function POST(req: NextRequest) {
     if (!accessToken || !mealType || !meals || !goal) {
       return Response.json({ error: 'Invalid request' }, { status: 400 })
     }
+    if (!Array.isArray(meals) || meals.length === 0 || meals.length > 20) {
+      return Response.json({ error: 'Invalid request' }, { status: 400 })
+    }
+    if (messages !== undefined && (!Array.isArray(messages) || messages.length > 30)) {
+      return Response.json({ error: 'Invalid request' }, { status: 400 })
+    }
 
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -28,15 +34,32 @@ export async function POST(req: NextRequest) {
       .from('user_goals').select('is_premium').eq('user_id', user.id).single()
     if (!goalData?.is_premium) return Response.json({ error: 'Premium required' }, { status: 403 })
 
+    // Rate limit: 20 calls/day per user
+    const dayStart = new Date(); dayStart.setHours(0, 0, 0, 0)
+    const { count } = await supabase.from('api_usage')
+      .select('*', { count: 'exact', head: true })
+      .eq('endpoint', 'meal-feedback-group')
+      .gte('created_at', dayStart.toISOString())
+    if ((count ?? 0) >= 20) {
+      return Response.json({ error: '本日の利用上限（20回）に達しました。明日またお試しください。' }, { status: 429 })
+    }
+    supabase.from('api_usage').insert({ endpoint: 'meal-feedback-group' }).then(() => {})
+
+    // Sanitize meal food names to prevent prompt injection
+    const sanitizedMeals = meals.map((m: any) => ({
+      ...m,
+      food_name: String(m.food_name || '').slice(0, 100).replace(/[\x00-\x1f]/g, ''),
+    }))
+
     const mealLabel = MEAL_LABELS[mealType] || mealType
-    const totalMeal = meals.reduce((acc: any, m: any) => ({
+    const totalMeal = sanitizedMeals.reduce((acc: any, m: any) => ({
       calories: acc.calories + (m.calories || 0),
       protein: acc.protein + (m.protein || 0),
       fat: acc.fat + (m.fat || 0),
       carbs: acc.carbs + (m.carbs || 0),
     }), { calories: 0, protein: 0, fat: 0, carbs: 0 })
 
-    const mealList = meals.map((m: any) =>
+    const mealList = sanitizedMeals.map((m: any) =>
       `・${m.food_name}（${m.calories}kcal / P:${m.protein}g / F:${m.fat}g / C:${m.carbs}g）`
     ).join('\n')
 
