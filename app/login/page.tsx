@@ -39,7 +39,7 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F4ED] flex items-center justify-center px-4">
+    <div className="min-h-screen bg-[#F8F4ED] flex flex-col items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-[#7A9471] mb-2">Meal Journal</h1>
