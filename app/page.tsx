@@ -23,6 +23,14 @@ export default function Home() {
   const [streak, setStreak] = useState(0)
   const [pricingPlan, setPricingPlan] = useState<'monthly' | 'annual'>('monthly')
   const [portalLoading, setPortalLoading] = useState(false)
+  const [celebrateMilestone, setCelebrateMilestone] = useState<{ days: number; icon: string; label: string } | null>(null)
+
+  const MILESTONES = [
+    { days: 7, icon: '🥉', label: '1週間達成！' },
+    { days: 21, icon: '🥈', label: '3週間達成！' },
+    { days: 30, icon: '🥇', label: '1ヶ月達成！' },
+    { days: 100, icon: '💎', label: '100日達成！' },
+  ]
 
   useEffect(() => {
     const load = async () => {
@@ -50,11 +58,25 @@ export default function Home() {
         for (const d of dates) {
           if (d === check) {
             count++
-            const dt = new Date(check + 'T00:00:00'); dt.setDate(dt.getDate() - 1)
-            check = dt.toISOString().split('T')[0]
+            const [y, m, day] = check.split('-').map(Number)
+            const dt = new Date(y, m - 1, day - 1)
+            check = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
           } else if (d < check) break
         }
         setStreak(count)
+
+        // マイルストーンチェック（localStorage で一度だけ表示）
+        if (count > 0) {
+          const earned = MILESTONES.filter(m => count >= m.days)
+          for (let i = earned.length - 1; i >= 0; i--) {
+            const key = `badge_${user.id}_${earned[i].days}`
+            if (!localStorage.getItem(key)) {
+              localStorage.setItem(key, '1')
+              setCelebrateMilestone(earned[i])
+              break
+            }
+          }
+        }
       }
       setLoading(false)
     }
@@ -184,19 +206,53 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#F8F4ED] pb-24">
+
+      {/* マイルストーンお祝いモーダル */}
+      {celebrateMilestone && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ background: 'rgba(44,42,38,0.65)' }}
+          onClick={() => setCelebrateMilestone(null)}
+        >
+          <div
+            className="bg-white rounded-3xl px-8 py-10 mx-6 text-center shadow-2xl"
+            style={{ animation: 'milestoneIn 0.45s cubic-bezier(0.175,0.885,0.32,1.275) forwards' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <style>{`@keyframes milestoneIn{from{transform:scale(0.5) translateY(30px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}`}</style>
+            <div className="text-7xl mb-3" style={{ filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.15))' }}>
+              {celebrateMilestone.icon}
+            </div>
+            <div className="text-xl font-bold text-[#2C2A26] mb-1">{celebrateMilestone.label}</div>
+            <div className="text-[#8A8377] text-sm mb-6">
+              {celebrateMilestone.days}日間記録を続けました！<br />この調子で続けましょう 🎉
+            </div>
+            <button
+              onClick={() => setCelebrateMilestone(null)}
+              className="bg-[#E8835A] text-white px-10 py-3 rounded-2xl font-semibold text-sm hover:bg-[#D4724A] transition-colors"
+            >
+              やったー！
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-md mx-auto px-4 pt-8">
 
         <div className="mb-5 flex items-start justify-between">
           <div>
             <p className="text-[#E8835A] font-medium text-sm mb-1">{dateStr}</p>
             <h1 className="text-2xl font-bold text-[#2C2A26]">こんにちは 👋</h1>
-            <div className="flex items-center gap-2 mt-1">
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
               <p className="text-sm text-[#8A8377]">今日も小さな一歩を、楽しく。</p>
               {streak >= 2 && (
                 <span className="inline-flex items-center gap-0.5 px-2 py-0.5 bg-[#FCEEE5] rounded-full border border-[#F5B89D] text-xs font-semibold text-[#E8835A]">
                   🔥 {streak}日連続
                 </span>
               )}
+              {MILESTONES.filter(m => streak >= m.days).map(m => (
+                <span key={m.days} title={m.label} className="text-base leading-none">{m.icon}</span>
+              ))}
             </div>
           </div>
           <HamburgerMenu isPremium={isPremium} onManageSubscription={handleCustomerPortal} />
