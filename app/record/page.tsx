@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
+import Link from 'next/link'
 
 const MEAL_TYPES = [
   { key: 'breakfast', label: '朝食', icon: '🌅' },
@@ -31,15 +32,23 @@ export default function Record() {
   const [saving, setSaving] = useState(false)
   const [todayTotal, setTodayTotal] = useState({ calories: 0, protein: 0, fat: 0, carbs: 0 })
   const [targetCal, setTargetCal] = useState(1750)
+  const [isPremium, setIsPremium] = useState(false)
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
   const [myMeals, setMyMeals] = useState<any[]>([])
   const [myDishes, setMyDishes] = useState<any[]>([])
   const [showMyMeals, setShowMyMeals] = useState(false)
   const [myMealSearch, setMyMealSearch] = useState('')
   const [editingMeal, setEditingMeal] = useState<any>(null)
-  const [inputMode, setInputMode] = useState<'none' | 'manual' | 'mymeal'>('none')
+  const [inputMode, setInputMode] = useState<'none' | 'manual' | 'mymeal' | 'ai'>('none')
   const [selectedMyMealIds, setSelectedMyMealIds] = useState<string[]>([])
   const [pickerTab, setPickerTab] = useState<'mymeal' | 'mydish'>('mymeal')
+  // AI算出モード
+  const [aiMealName, setAiMealName] = useState('')
+  const [aiEstimating, setAiEstimating] = useState(false)
+  const [aiSaved, setAiSaved] = useState(false)
+  const [aiPortion, setAiPortion] = useState('')
+  const [aiError, setAiError] = useState<string | null>(null)
+  const [savedToMyMeal, setSavedToMyMeal] = useState(false)
 
   useEffect(() => {
     loadRecords()
@@ -52,10 +61,13 @@ export default function Record() {
     if (!user) return
     const { data } = await supabase
       .from('user_goals')
-      .select('target_cal')
+      .select('target_cal, is_premium')
       .eq('user_id', user.id)
       .single()
-    if (data) setTargetCal(data.target_cal)
+    if (data) {
+      setTargetCal(data.target_cal)
+      setIsPremium(data.is_premium || false)
+    }
   }
 
   const loadMyMeals = async () => {
@@ -138,21 +150,78 @@ export default function Record() {
     if (error) {
       alert('保存に失敗しました')
     } else {
-      setFoodName('')
-      setCalories('')
-      setProtein('')
-      setFat('')
-      setCarbs('')
-      setInputMode('none')
-      setShowMyMeals(false)
-      setSelectedMyMealIds([])
+      setFoodName(''); setCalories(''); setProtein(''); setFat(''); setCarbs('')
+      setInputMode('none'); setShowMyMeals(false); setSelectedMyMealIds([])
       loadRecords()
     }
     setSaving(false)
   }
 
+  const saveRecordWithData = async (data: {
+    name: string; calories: number; protein: number; fat: number; carbs: number
+  }) => {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return false
+    const { error } = await supabase.from('meal_records').insert({
+      user_id: user.id,
+      meal_type: activeTab,
+      food_name: data.name,
+      calories: data.calories,
+      protein: data.protein,
+      fat: data.fat,
+      carbs: data.carbs,
+      recorded_at: selectedDate,
+    })
+    if (error) return false
+    setFoodName(data.name)
+    setCalories(String(data.calories))
+    setProtein(String(data.protein))
+    setFat(String(data.fat))
+    setCarbs(String(data.carbs))
+    loadRecords()
+    return true
+  }
+
+  const estimateAndSave = async () => {
+    if (!aiMealName.trim()) return
+    setAiEstimating(true)
+    setAiError(null)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) throw new Error('no session')
+
+      const res = await fetch('/api/nutrition-estimate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accessToken: session.access_token, mealName: aiMealName }),
+      })
+
+      const json = await res.json()
+      if (!res.ok) { setAiError(json.error || '推定に失敗しました'); return }
+
+      const ok = await saveRecordWithData({
+        name: aiMealName,
+        calories: json.calories,
+        protein: json.protein,
+        fat: json.fat,
+        carbs: json.carbs,
+      })
+      if (ok) {
+        setAiPortion(json.portion || '')
+        setAiSaved(true)
+        setSavedToMyMeal(false)
+      } else {
+        setAiError('記録の保存に失敗しました')
+      }
+    } catch {
+      setAiError('推定に失敗しました。しばらくしてからもう一度お試しください。')
+    } finally {
+      setAiEstimating(false)
+    }
+  }
+
   const saveToMyMeals = async () => {
-    if (!foodName) { alert('食べたものを入力してください'); return }
+    if (!foodName) return
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
     const { error } = await supabase.from('my_meals').insert({
@@ -163,12 +232,7 @@ export default function Record() {
       fat: parseFloat(fat) || 0,
       carbs: parseFloat(carbs) || 0,
     })
-    if (error) {
-      alert('保存に失敗しました')
-    } else {
-      alert('マイミールに保存しました！')
-      loadMyMeals()
-    }
+    if (!error) { setSavedToMyMeal(true); loadMyMeals() }
   }
 
   const deleteRecord = async (id: string) => {
@@ -182,9 +246,7 @@ export default function Record() {
     loadMyMeals()
   }
 
-  const startEditMyMeal = (meal: any) => {
-    setEditingMeal(meal)
-  }
+  const startEditMyMeal = (meal: any) => { setEditingMeal(meal) }
 
   const updateMyMeal = async () => {
     if (!editingMeal) return
@@ -197,6 +259,10 @@ export default function Record() {
     }).eq('id', editingMeal.id)
     setEditingMeal(null)
     loadMyMeals()
+  }
+
+  const resetAiMode = () => {
+    setAiMealName(''); setAiSaved(false); setAiPortion(''); setAiError(null); setSavedToMyMeal(false)
   }
 
   const progress = Math.min(100, Math.round((todayTotal.calories / targetCal) * 100))
@@ -220,6 +286,7 @@ export default function Record() {
           </div>
         </div>
 
+        {/* カロリー進捗 */}
         <div className="bg-white rounded-2xl p-5 border border-[#DDD6C8] mb-4">
           <div className="flex justify-between items-end mb-2">
             <div>
@@ -229,8 +296,7 @@ export default function Record() {
             <span className="text-sm font-medium text-[#7A9471]">{progress}%</span>
           </div>
           <div className="w-full h-2 bg-[#EFE8DA] rounded-full overflow-hidden mb-4">
-            <div className="h-full bg-[#E8835A] rounded-full transition-all duration-500"
-              style={{ width: `${progress}%` }} />
+            <div className="h-full bg-[#E8835A] rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
           </div>
           <div className="grid grid-cols-3 gap-3">
             {[
@@ -248,6 +314,7 @@ export default function Record() {
           </div>
         </div>
 
+        {/* 食事タブ */}
         <div className="flex gap-2 mb-4 overflow-x-auto">
           {MEAL_TYPES.map((m) => (
             <button key={m.key} onClick={() => setActiveTab(m.key)}
@@ -261,18 +328,25 @@ export default function Record() {
           ))}
         </div>
 
+        {/* 記録済みリスト */}
         {records.filter(r => r.meal_type === activeTab).length > 0 && (
           <div className="mb-4">
             {records.filter(r => r.meal_type === activeTab).map((r) => (
-              <div key={r.id} className="bg-white rounded-xl p-3 border border-[#DDD6C8] mb-2 flex justify-between items-center">
-                <div>
-                  <div className="text-sm font-medium text-[#2C2A26]">{r.food_name}</div>
+              <div key={r.id} className="bg-white rounded-xl p-3 border border-[#DDD6C8] mb-2 flex items-center gap-2">
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-[#2C2A26] truncate">{r.food_name}</div>
                   <div className="text-xs text-[#8A8377]">
                     {r.calories}kcal · P{r.protein}g · F{r.fat}g · C{r.carbs}g
                   </div>
                 </div>
+                {isPremium && (
+                  <Link href={`/feedback/${r.id}`}
+                    className="flex-shrink-0 px-2.5 py-1.5 bg-[#E4ECDF] text-[#7A9471] rounded-lg text-xs font-medium hover:bg-[#D5E3D0] transition-colors">
+                    🤖 評価
+                  </Link>
+                )}
                 <button onClick={() => deleteRecord(r.id)}
-                  className="text-[#DDD6C8] hover:text-[#E8835A] text-lg transition-colors ml-2">
+                  className="flex-shrink-0 text-[#DDD6C8] hover:text-[#E8835A] text-xl transition-colors">
                   ×
                 </button>
               </div>
@@ -280,29 +354,47 @@ export default function Record() {
           </div>
         )}
 
+        {/* 入力カード */}
         <div className="bg-white rounded-2xl p-5 border border-[#DDD6C8] mb-4">
+
           {/* モード選択ボタン */}
-          <div className="flex gap-2 mb-4">
+          <div className="flex flex-col gap-2 mb-4">
+            <div className="flex gap-2">
+              <button
+                onClick={() => { setShowMyMeals(!showMyMeals); if (inputMode === 'manual' || inputMode === 'ai') setInputMode('none') }}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition-all ${
+                  showMyMeals ? 'bg-[#7A9471] text-white border-[#7A9471]' : 'bg-[#F8F4ED] text-[#5C574F] border-[#DDD6C8]'
+                }`}>
+                ⭐ マイミールから選択
+              </button>
+              <button
+                onClick={() => { setInputMode('manual'); setShowMyMeals(false) }}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition-all ${
+                  inputMode === 'manual' ? 'bg-[#E8835A] text-white border-[#E8835A]' : 'bg-[#F8F4ED] text-[#5C574F] border-[#DDD6C8]'
+                }`}>
+                ✏️ 手入力
+              </button>
+            </div>
             <button
-              onClick={() => { setShowMyMeals(!showMyMeals); if (inputMode === 'manual') setInputMode('none') }}
-              className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition-all ${
-                showMyMeals ? 'bg-[#7A9471] text-white border-[#7A9471]' : 'bg-[#F8F4ED] text-[#5C574F] border-[#DDD6C8]'
+              onClick={() => {
+                if (!isPremium) { alert('AI算出はプレミアムプランの機能です'); return }
+                setInputMode('ai'); setShowMyMeals(false); resetAiMode()
+              }}
+              className={`relative w-full py-2.5 rounded-xl text-sm font-medium border transition-all ${
+                inputMode === 'ai'
+                  ? 'bg-[#E8835A] text-white border-[#E8835A]'
+                  : isPremium
+                  ? 'bg-[#F8F4ED] text-[#5C574F] border-[#DDD6C8]'
+                  : 'bg-[#F8F4ED] text-[#8A8377] border-[#DDD6C8]'
               }`}>
-              ⭐ マイミールから選択
-            </button>
-            <button
-              onClick={() => { setInputMode('manual'); setShowMyMeals(false) }}
-              className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition-all ${
-                inputMode === 'manual' ? 'bg-[#E8835A] text-white border-[#E8835A]' : 'bg-[#F8F4ED] text-[#5C574F] border-[#DDD6C8]'
-              }`}>
-              ✏️ 手入力
+              🤖 AI算出（食事名から自動推定）
+              {!isPremium && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-base">🔒</span>}
             </button>
           </div>
 
-          {/* ピッカー */}
+          {/* マイミール／マイディッシュ ピッカー */}
           {showMyMeals && (
             <div className="mb-4">
-              {/* タブ */}
               <div className="flex gap-1 mb-3 bg-[#F8F4ED] p-1 rounded-xl">
                 <button onClick={() => setPickerTab('mymeal')}
                   className={`flex-1 py-2 rounded-lg text-xs font-medium transition-all ${
@@ -382,7 +474,69 @@ export default function Record() {
             </div>
           )}
 
-          {/* 入力フォーム（手入力 or マイミール選択後） */}
+          {/* AI算出モードUI */}
+          {inputMode === 'ai' && (
+            <div className="mb-2">
+              {!aiSaved ? (
+                <>
+                  <div className="mb-3">
+                    <label className="block text-sm text-[#5C574F] mb-1">食事名を入力</label>
+                    <input
+                      type="text"
+                      value={aiMealName}
+                      onChange={(e) => { setAiMealName(e.target.value); setAiError(null) }}
+                      onKeyDown={(e) => e.key === 'Enter' && estimateAndSave()}
+                      placeholder="例：カツ丼、マクドナルドのビッグマック"
+                      className="w-full px-4 py-3 rounded-xl border border-[#DDD6C8] bg-[#F8F4ED] text-[#2C2A26] focus:outline-none focus:border-[#7A9471]"
+                    />
+                  </div>
+                  {aiError && (
+                    <div className="mb-3 px-3 py-2 bg-[#FCEEE5] rounded-xl border border-[#F5B89D]">
+                      <p className="text-xs text-[#E8835A]">{aiError}</p>
+                    </div>
+                  )}
+                  <button
+                    onClick={estimateAndSave}
+                    disabled={aiEstimating || !aiMealName.trim()}
+                    className="w-full py-3 bg-[#E8835A] text-white rounded-xl font-medium hover:bg-[#D4724A] transition-colors disabled:opacity-50 text-sm">
+                    {aiEstimating ? '⏳ AIが推定中...' : '🤖 栄養素を推定して記録する'}
+                  </button>
+                </>
+              ) : (
+                <div>
+                  <div className="px-3 py-2 bg-[#E4ECDF] rounded-xl mb-3">
+                    <p className="text-xs text-[#7A9471] font-medium">✓ 記録しました！</p>
+                    {aiPortion && <p className="text-xs text-[#5C574F] mt-0.5">{aiPortion}</p>}
+                  </div>
+                  <div className="bg-[#F8F4ED] rounded-xl p-3 mb-3 border border-[#DDD6C8]">
+                    <div className="text-sm font-medium text-[#2C2A26] mb-1">{foodName}</div>
+                    <div className="text-xs text-[#8A8377]">
+                      {calories}kcal · P{protein}g · F{fat}g · C{carbs}g
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    {!savedToMyMeal ? (
+                      <button onClick={saveToMyMeals}
+                        className="flex-1 py-2.5 bg-[#FCEEE5] text-[#E8835A] rounded-xl text-sm font-medium hover:bg-[#F5D5C5] transition-colors">
+                        ⭐ マイミールに保存
+                      </button>
+                    ) : (
+                      <div className="flex-1 py-2.5 bg-[#E4ECDF] text-[#7A9471] rounded-xl text-sm font-medium text-center">
+                        ✓ マイミールに保存済み
+                      </div>
+                    )}
+                    <button
+                      onClick={() => { resetAiMode() }}
+                      className="flex-1 py-2.5 bg-[#F8F4ED] text-[#5C574F] rounded-xl text-sm font-medium border border-[#DDD6C8] hover:border-[#7A9471] transition-colors">
+                      別の食事を記録
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 手入力 or マイミール選択後フォーム */}
           {(inputMode === 'manual' || inputMode === 'mymeal') && (
             <>
               <div className="mb-3">
@@ -422,6 +576,7 @@ export default function Record() {
           )}
         </div>
 
+        {/* よく食べるもの */}
         <div>
           <p className="text-sm font-medium text-[#5C574F] mb-2">よく食べるもの</p>
           <div className="grid grid-cols-2 gap-2">
