@@ -10,6 +10,10 @@ function verifySecret(req: NextRequest) {
   return req.headers.get('authorization') === `Bearer ${process.env.BOT_SECRET}`
 }
 
+function todayJST(): string {
+  return new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Tokyo' }).format(new Date())
+}
+
 // POST: 下書きを保存
 export async function POST(req: NextRequest) {
   if (!verifySecret(req)) {
@@ -42,12 +46,17 @@ export async function GET(req: NextRequest) {
   }
 
   const post_type = new URL(req.url).searchParams.get('type')
+  const today = todayJST()
+  const dayStart = `${today}T00:00:00+09:00`
+  const dayEnd = `${today}T23:59:59+09:00`
 
   const { data, error } = await supabase
     .from('bot_posts')
     .select('*')
     .eq('post_type', post_type)
     .in('status', ['pending', 'approved', 'edited'])
+    .gte('scheduled_at', dayStart)
+    .lte('scheduled_at', dayEnd)
     .order('created_at', { ascending: false })
     .limit(1)
     .single()
@@ -59,11 +68,20 @@ export async function GET(req: NextRequest) {
       .select('id')
       .eq('post_type', post_type)
       .eq('status', 'skipped')
-      .order('created_at', { ascending: false })
+      .gte('scheduled_at', dayStart)
+      .lte('scheduled_at', dayEnd)
       .limit(1)
       .single()
 
     return NextResponse.json({ skip: true, reason: skipped ? 'skipped' : 'no_draft' })
+  }
+
+  // 未対応（pending）の下書きは、本人が編集・承認する猶予として60分待つ
+  if (data.status === 'pending') {
+    const ageMinutes = (Date.now() - new Date(data.created_at).getTime()) / 60000
+    if (ageMinutes < 60) {
+      return NextResponse.json({ skip: true, reason: 'waiting_for_response' })
+    }
   }
 
   await supabase.from('bot_posts').update({ status: 'posted' }).eq('id', data.id)
